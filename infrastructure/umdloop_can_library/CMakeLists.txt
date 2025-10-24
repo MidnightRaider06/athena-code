@@ -22,9 +22,13 @@ FetchContent_MakeAvailable(SerialCAN)
 
 # -------------------- Build SerialCAN --------------------
 add_custom_target(umdloop_can_library_build_serialcan
-        COMMAND ./build_no.sh
-        COMMAND make -C Libraries/SerialCAN all CFLAGS=-fPIC CXXFLAGS=-fPIC
-        COMMAND make -C Libraries/CANAPI all CFLAGS=-fPIC CXXFLAGS=-fPIC
+        # First generate Version.h and build_no.h
+        COMMAND bash ./build_no.sh
+        # Then build the libraries with proper CFLAGS
+        COMMAND ${CMAKE_COMMAND} -E env "CFLAGS=-fPIC" "CXXFLAGS=-fPIC" 
+                ${CMAKE_MAKE_PROGRAM} -C Libraries/SerialCAN all
+        COMMAND ${CMAKE_COMMAND} -E env "CFLAGS=-fPIC" "CXXFLAGS=-fPIC"
+                ${CMAKE_MAKE_PROGRAM} -C Libraries/CANAPI all
         WORKING_DIRECTORY ${serialcan_SOURCE_DIR}
         COMMENT "Building SerialCAN libraries with -fPIC"
 )
