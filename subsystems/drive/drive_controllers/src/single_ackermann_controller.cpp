@@ -105,6 +105,12 @@ controller_interface::InterfaceConfiguration SingleAckermannController::state_in
 controller_interface::CallbackReturn SingleAckermannController::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
+  // Initialize all command interfaces to zero to prevent initial movement
+  for (size_t i = 0; i < command_interfaces_.size(); ++i)
+  {
+    command_interfaces_[i].set_value(0.0);
+  }
+  RCLCPP_INFO(get_node()->get_logger(), "SingleAckermannController activated with all commands set to zero");
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
@@ -124,6 +130,11 @@ controller_interface::return_type SingleAckermannController::update(
   auto current_ref = input_ref_.readFromRT();
   if (!current_ref || !(*current_ref) || (*current_ref)->axes.empty())
   {
+    // Set all command interfaces to zero when no input is available
+    for (size_t i = 0; i < command_interfaces_.size(); ++i)
+    {
+      command_interfaces_[i].set_value(0.0);
+    }
     return controller_interface::return_type::OK;
   }
 
@@ -149,7 +160,12 @@ controller_interface::return_type SingleAckermannController::update(
   // If we are turning...
   if (std::abs(steer_cmd) > 1e-4) {
     double turn_radius = wheelbase / tan(steer_cmd);
-    double angular_vel = linear_vel_cmd / turn_radius;
+    double angular_vel = std::abs(linear_vel_cmd) / std::abs(turn_radius);
+    
+    // Preserve the sign of linear velocity for forward/backward motion
+    if (linear_vel_cmd < 0) {
+      angular_vel = -angular_vel;
+    }
 
     // Calculate magnitudes of inner and outer wheel angles
     double inner_angle = atan(wheelbase / (std::abs(turn_radius) - track_width / 2.0));
@@ -163,22 +179,22 @@ controller_interface::return_type SingleAckermannController::update(
 
     // Assign angles and velocities based on the hardware's actual behavior
     if (steer_cmd > 0.0) { // LEFT TURN: left wheel is INNER
-      front_left_steer_angle = -outer_angle;
-      front_right_steer_angle = -inner_angle;
+      front_left_steer_angle = -inner_angle;
+      front_right_steer_angle = -outer_angle;
+      
+      front_left_vel = inner_front_vel;
+      front_right_vel = outer_front_vel;
+      rear_left_vel = inner_rear_vel;
+      rear_right_vel = outer_rear_vel;
+
+    } else { // RIGHT TURN: right wheel is INNER
+      front_left_steer_angle = outer_angle;
+      front_right_steer_angle = inner_angle;
       
       front_left_vel = outer_front_vel;
       front_right_vel = inner_front_vel;
       rear_left_vel = outer_rear_vel;
       rear_right_vel = inner_rear_vel;
-
-    } else { // RIGHT TURN: right wheel is INNER
-      front_left_steer_angle = inner_angle;
-      front_right_steer_angle = outer_angle;
-      
-      front_left_vel = -inner_front_vel;
-      front_right_vel = -outer_front_vel;
-      rear_left_vel = -inner_rear_vel;
-      rear_right_vel = -outer_rear_vel;
     }
   }
 

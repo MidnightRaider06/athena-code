@@ -72,23 +72,22 @@ hardware_interface::CallbackReturn RMDHardwareInterface::on_init(
   }
   
   // Initializes command and state interface values
-  joint_state_position_.assign(num_joints, 0);
-  joint_state_position_ = initial_position_; //EXPERIMENTING, THIS NEEDS TO CHANGE
-  joint_state_velocity_.assign(num_joints, 0);
+  joint_state_position_.assign(num_joints, 0.0);
+  joint_state_velocity_.assign(num_joints, 0.0);
 
   // joint_command_position_.assign(num_joints, 0);
   joint_command_position_.assign(num_joints, std::numeric_limits<double>::quiet_NaN());
 
   // joint_command_position_ = initial_position_;
-  joint_command_velocity_.assign(num_joints, 0);
+  joint_command_velocity_.assign(num_joints, 0.0);
 
   for (size_t i = 0; i < initial_position_.size(); ++i) {
     RCLCPP_INFO(rclcpp::get_logger("RMDHardwareInterface"), "Joint %zu command vel in on_init: %f", i, joint_command_velocity_[i]);
   }
 
-  encoder_position = 0;
-  motor_position = 0;
-  motor_velocity = 0;
+  encoder_position = 0.0;
+  motor_position = 0.0;
+  motor_velocity = 0.0;
 
   joint_initialization_.assign(num_joints, false);
 
@@ -207,12 +206,14 @@ hardware_interface::CallbackReturn RMDHardwareInterface::on_activate(
     RCLCPP_INFO(rclcpp::get_logger("RMDHardwareInterface"), "Joint %zu initial position in on_activate: %f", i, initial_position_[i]);
   }
   
-  // Initialize command positions to initial values to avoid NaN
+  // Initialize command positions and velocities to zero to prevent initial movement
   // Controllers will override these once they start
-  joint_command_position_ = initial_position_;
+  joint_command_position_.assign(num_joints, 0.0);
+  joint_command_velocity_.assign(num_joints, 0.0);
   
-  for (size_t i = 0; i < initial_position_.size(); ++i) {
+  for (size_t i = 0; i < joint_command_position_.size(); ++i) {
     RCLCPP_INFO(rclcpp::get_logger("RMDHardwareInterface"), "Joint %zu command position initialized to: %f", i, joint_command_position_[i]);
+    RCLCPP_INFO(rclcpp::get_logger("RMDHardwareInterface"), "Joint %zu command velocity initialized to: %f", i, joint_command_velocity_[i]);
   }
 
   RCLCPP_INFO(rclcpp::get_logger("RMDHardwareInterface"), "Successfully activated!");
@@ -413,9 +414,12 @@ hardware_interface::return_type rmd_ros2_control::RMDHardwareInterface::write(
       joint_velocity = joint_orientation[i]*calculate_motor_velocity_from_desired_joint_velocity(joint_command_velocity_[i], joint_gear_ratios[i]);
 
       if(DEBUG_MODE == 1) {
-        RCLCPP_INFO(rclcpp::get_logger("RMDHardwareInterface"), "Writing velocities for: %s Joint velocity of motor (0.01 dps): %d", 
+        RCLCPP_INFO(rclcpp::get_logger("RMDHardwareInterface"), "Writing velocities for: %s Joint velocity of motor (0.01 dps): %d Joint command velocity: %f Orientation: %f CAN ID: %d", 
                                                         info_.joints[i].name.c_str(),
-                                                        joint_velocity);
+                                                        joint_velocity,
+                                                        joint_command_velocity_[i],
+                                                        joint_orientation[i],
+                                                        joint_node_write_ids[i]);
       }
       
       // ENCODING CAN MESSAGE

@@ -264,7 +264,7 @@ def generate_launch_description():
             target_action=control_node,
             on_start=[
                 TimerAction(
-                    period=3.0,
+                    period=5.0,  # Increased delay to ensure hardware interfaces are fully initialized
                     actions=[joint_state_broadcaster_spawner],
                 ),
             ],
@@ -316,6 +316,18 @@ def generate_launch_description():
         arguments=['--ros-args', '--log-level', 'fatal']
     )
 
+    delay_can_node_after_control_node = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=control_node,
+            on_start=[
+                TimerAction(
+                    period=1.0,  # Small delay to let control node initialize
+                    actions=[umdloop_can_node],
+                ),
+            ],
+        )
+    )
+
     joystick_publisher = Node(
         package='teleop',
         executable='joystick',
@@ -340,12 +352,12 @@ def generate_launch_description():
     return LaunchDescription(
         declared_arguments + 
         [
-            umdloop_can_node,
             control_node,
             robot_state_pub_node,
             joystick_publisher,
             teleop_twist_joy,
             joint_state_publisher,
+            delay_can_node_after_control_node,
             delay_joint_state_broadcaster_spawner_after_ros2_control_node,
             delay_rviz_after_joint_state_broadcaster_spawner,
             controller_switcher_node,
