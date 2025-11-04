@@ -20,7 +20,7 @@ jobs:
           apt-get update
           apt-get install -y python3-colcon-common-extensions
           rosdep update
-          rosdep install --from-paths src --ignore-src -r -y
+          rosdep install --from-paths . --ignore-src -r -y
       
       - name: Build workspace
         run: |
