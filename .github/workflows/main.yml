@@ -21,8 +21,10 @@ jobs:
           apt-get install -y python3-colcon-common-extensions
           rosdep update
           rosdep install --from-paths . --ignore-src -r -y
+        shell: bash
       
       - name: Build workspace
         run: |
           source /opt/ros/humble/setup.bash
           colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
+        shell: bash
