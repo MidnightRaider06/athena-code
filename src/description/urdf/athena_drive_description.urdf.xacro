@@ -116,7 +116,7 @@
             <parent link="swerve_mount_1_link" />
             <child link="steer_1_link" />
             <axis xyz="0 1 0" />
-            <limit lower="0" upper="6.2832" effort="200" velocity="3" />
+            <limit lower="-3.1416" upper="3.1416" effort="200" velocity="3" />
         </joint>
 
         <link name="wheel_bracket_1_link">
@@ -237,7 +237,7 @@
             <parent link="swerve_mount_4_link" />
             <child link="steer_4_link" />
             <axis xyz="0 1 0" />
-            <limit lower="0" upper="6.2832" effort="200" velocity="3" />
+            <limit lower="-3.1416" upper="3.1416" effort="200" velocity="3" />
         </joint>
 
         <link name="wheel_bracket_4_link">
@@ -389,7 +389,7 @@
             <parent link="swerve_mount_2_link" />
             <child link="steer_2_link" />
             <axis xyz="0 1 0" />
-            <limit lower="0" upper="6.2832" effort="200" velocity="3" />
+            <limit lower="-3.1416" upper="3.1416" effort="200" velocity="3" />
         </joint>
 
         <link name="wheel_bracket_2_link">
@@ -510,7 +510,7 @@
             <parent link="swerve_mount_3_link" />
             <child link="steer_3_link" />
             <axis xyz="0 1 0" />
-            <limit lower="0" upper="6.28318530718" effort="200" velocity="3" />
+            <limit lower="-3.1416" upper="3.1416" effort="200" velocity="3" />
         </joint>
 
         <link name="wheel_bracket_3_link">

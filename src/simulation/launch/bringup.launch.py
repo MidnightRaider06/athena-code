@@ -27,6 +27,11 @@ ARGUMENTS = [
         default_value='empty.sdf',
         description='Gazebo world file to load'
     ),
+    DeclareLaunchArgument(
+        'world_name',
+        default_value='default',  
+        description='Name of the world inside Gazebo'
+    ),
 ]
 
 def generate_launch_description():
@@ -54,7 +59,8 @@ def generate_launch_description():
         launch_arguments=[
             ('namespace', LaunchConfiguration('namespace')),
             ('rviz', LaunchConfiguration('rviz')),
-            ('use_sim_time', LaunchConfiguration('use_sim_time'))
+            ('use_sim_time', LaunchConfiguration('use_sim_time')),
+            ('world_name', LaunchConfiguration('world_name'))
         ]
     )
 

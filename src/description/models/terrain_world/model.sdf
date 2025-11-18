@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="terrain_world">
+    <static>true</static>
+    <link name="terrain_world_link">
+      <visual name="terrain_world_visual">
+        <geometry>
+          <mesh>
+            <uri>model://terrain_world/meshes/terrain.dae</uri>
+          </mesh>
+        </geometry>
+        <!-- <material>
+          <script>
+            <uri>model://terrain/meshes/scripts</uri>
+            <name>RepeatedSand/Diffuse</name>
+          </script> 
+        </material> -->
+        <material>
+          <ambient>0.85 0.76 0.52 1</ambient>
+          <diffuse>0.85 0.76 0.52 1</diffuse>
+          <specular>0.0 0.0 0.0 1</specular>
+        </material>
+        
+      </visual>
+      <collision name="terrain_world_collision">
+        <geometry>
+          <mesh>
+            <uri>model://terrain_world/meshes/terrain.dae</uri>
+          </mesh>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
