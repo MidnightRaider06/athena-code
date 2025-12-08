@@ -1,0 +1,51 @@
+# Minimal standalone local costmap focused on your obstacle stream
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      global_frame: odom
+      robot_base_frame: base_link
+      rolling_window: true
+      width: 10.0
+      height: 10.0
+      resolution: 0.05
+      update_frequency: 10.0
+      publish_frequency: 10.0
+      transform_tolerance: 0.1
+
+      # Simple rectangular footprint; adjust to your robot dims
+      footprint: [[0.35, 0.25], [0.35, -0.25], [-0.35, -0.25], [-0.35, 0.25]]
+      footprint_padding: 0.02
+
+      plugins: ["obstacle_layer", "inflation_layer"]
+
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: true
+        combination_method: 1             # MAX
+        observation_sources: obstacles, laser
+        obstacles:
+          data_type: PointCloud2
+          topic: /obstacles/points
+          marking: true
+          clearing: true
+          obstacle_range: 8.0
+          raytrace_range: 9.0
+          observation_persistence: 2.5    # seconds
+          expected_update_rate: 0.15      # seconds (6–10 Hz OK)
+        
+        laser:
+          data_type: LaserScan
+          topic: /scan                    # TODO: Adjust based on actual topic name
+          marking: true
+          clearing: true
+          obstacle_range: 6.0             # TODO: Tune to the LiDAR (allegedly up to 30m but we might not need that)
+          raytrace_range: 7.0
+          observation_persistence: 2.5    # seconds
+
+        max_obstacle_height: 1.5          # global cap for layer
+
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        enabled: true
+        inflation_radius: 0.40
+        cost_scaling_factor: 3.0
