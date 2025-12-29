@@ -1,0 +1,8 @@
+dem_costmap_converter:
+  ros__parameters:
+    dem_file_path: "maps/north_site800m.tif"                  # override via launch-arg if you like
+    map_resolution: 1.0
+    max_passable_slope_degrees: 15.0
+    output_frame: map
+    origin_x: 518370.0
+    origin_y: 4253272.0

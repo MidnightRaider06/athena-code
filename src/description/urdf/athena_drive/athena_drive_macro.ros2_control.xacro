@@ -133,6 +133,9 @@
             <parameters>${simulation_controllers}</parameters>
           </xacro:if>
           <controller_manager_node_name>${prefix}controller_manager</controller_manager_node_name>
+          <ros>
+            <remapping>ackermann_steering_controller/tf_odometry:=/tf</remapping>
+          </ros>
         </plugin>
       </gazebo>
     </xacro:if>

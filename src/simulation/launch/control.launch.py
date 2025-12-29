@@ -15,7 +15,10 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=['ackermann_steering_controller'],
-        output='screen'
+        output='screen',
+        remappings=[
+        ("/ackermann_steering_controller/tf_odometry", "/tf"),
+        ]
     )
     
     delayed_ackermann_controller_spawner = RegisterEventHandler(
