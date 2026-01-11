@@ -6,6 +6,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+
+# Add ROS2 GTSAM path to CMAKE_PREFIX_PATH
+list(APPEND CMAKE_PREFIX_PATH "/opt/ros/humble")
+
 find_package(GTSAM REQUIRED)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/cmake/geographiclib/")
 find_package(GeographicLib REQUIRED)

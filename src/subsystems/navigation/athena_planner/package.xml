@@ -18,7 +18,7 @@
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
 
-  <exec_depend>nav2_planner_server</exec_depend>
+  <exec_depend>nav2_planner</exec_depend>
   <exec_depend>nav2_costmap_2d</exec_depend>
   <exec_depend>nav2_lifecycle_manager</exec_depend>
   <exec_depend>nav2_smac_planner</exec_depend>

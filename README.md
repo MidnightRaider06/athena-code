@@ -55,7 +55,7 @@ Your PR will be reviewed by your lead, and once approved, it will be merged into
 
 2. **Install required dependencies**
 ```bash
-rosdep install --from-paths src/athena-code -y --ignore-src
+rosdep install --from-paths src y --ignore-src
 ```
 
 3. **Build the workspace**

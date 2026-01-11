@@ -18,12 +18,11 @@
   <depend>tf2_sensor_msgs</depend>
   <depend>tf2_eigen</depend>
   <depend>pcl_conversions</depend>
-  <depend>zed_interfaces</depend>
   <depend>zed_msgs</depend>
 
   <!-- System libs (via rosdep) -->
-  <build_depend>libpcl-dev</build_depend>
-  <exec_depend>libpcl-dev</exec_depend>
+  <build_depend>libpcl-all-dev</build_depend>
+  <exec_depend>libpcl-all-dev</exec_depend>
 
   <!-- Eigen (portable find_package support) -->
   <build_depend>eigen3_cmake_module</build_depend>
