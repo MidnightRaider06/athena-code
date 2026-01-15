@@ -1,37 +1,88 @@
-localizer_node:
+state_estimator:
   ros__parameters:
-    # Topic configuration
+    # ==========================================================================
+    # Topic Configuration
+    # ==========================================================================
     imu_topic: "/imu"
     gnss_topic: "/gps/fix"
-    odom_topic: "/odom"
+    odom_topic: "/odom/ground_truth"
     output_odom_topic: "/localization/odom"
 
-    # Publish rate (Hz)
-    publish_rate: 50.0
-
-    # Frame names
+    # ==========================================================================
+    # Frame Names
+    # ==========================================================================
     tf_prefix: ""
     map_frame: "map"
     odom_frame: "odom"
-    base_frame: "base_link"
+    base_frame: "base_footprint"
     imu_frame: "imu_link"
     gnss_frame: "gnss_link"
 
-    # IMU noise parameters
-    imu_accel_noise: 0.2        # m/s^2
-    imu_gyro_noise: 0.01        # rad/s
-    imu_bias_noise: 0.0002      # bias random walk
+    # ==========================================================================
+    # Publish Rates
+    # ==========================================================================
+    publish_rate: 100.0          # Hz - high rate for smooth output
+    tf_publish_rate: 100.0       # Hz - increased from 50 for smoother transforms
 
-    # GNSS noise parameters
-    gnss_noise: 0.25            # meters
+    # ==========================================================================
+    # IMU Noise Parameters (continuous-time spectral densities)
+    # ==========================================================================
+    accel_noise_sigma: 3.0           # m/s^2/sqrt(Hz) - realistic for raw IMU data
+    gyro_noise_sigma: 10.0           # rad/s/sqrt(Hz) - realistic for raw gyro data
+    accel_bias_rw_sigma: 5.0e-2      # m/s^3/sqrt(Hz) - allow bias adaptation for raw data
+    gyro_bias_rw_sigma: 5.0e-2       # rad/s^2/sqrt(Hz) - allow gyro bias changes
 
-    # Odometry noise parameters
-    odom_noise: 0.5             # meters
+    # ==========================================================================
+    # GNSS Parameters
+    # ==========================================================================
+    gnss_position_sigma: 0.0000001         # meters - realistic consumer GPS uncertainty
+    gnss_altitude_sigma: 0.0000001
+    gnss_max_age: 0.5                # seconds - moderate timing constraint
+    gnss_fix_quality_multiplier: 1.0 # neutral GPS weight
 
-    # State estimation window parameters
-    max_time_window: 10.0       # seconds
-    max_states: 100
+    # GNSS outlier rejection (Huber robust noise model)
+    use_robust_gnss_noise: false      # reject GPS jumps/outliers
+    gnss_huber_k: 1.0                # aggressive outlier rejection
 
+    # ==========================================================================
+    # Odometry Parameters
+    # ==========================================================================
+    odom_position_sigma: 0.00001        # meters - realistic wheel odometry with slip
+    odom_rotation_sigma: 0.00001        # radians - account for steering uncertainty
+
+    # ==========================================================================
+    # Graph Management - MAXIMUM STABILITY FOR RAW DATA
+    # ==========================================================================
+    state_creation_rate: 50.0        # Hz - high rate for dense optimization
+    max_graph_states: 500            # massive window: 10 seconds @ 50Hz
+
+    # ISAM2 optimizer parameters - AGGRESSIVE OPTIMIZATION
+    isam2_relinearize_threshold: 0.01   # tight but realistic convergence
+    isam2_relinearize_skip: 1           # relinearize every update for stability
+
+    # ==========================================================================
+    # IMU Integration Parameters - REALISTIC FOR RAW DATA
+    # ==========================================================================
+    integration_covariance: 1.0e-6   # account for discretization errors in raw data
+    bias_acc_omega_int: 1.0e-5       # realistic bias integration uncertainty
+
+    # ==========================================================================
+    # Initialization Parameters
+    # ==========================================================================
+    min_imu_samples_for_init: 100    # more samples for noisy raw data (1 second @ 100Hz)
+    initial_velocity_sigma: 0.5      # m/s - less confident with raw data
+    initial_rotation_sigma: 0.1      # rad - ~6° uncertainty for raw IMU
+    initial_accel_bias_sigma: 0.1    # m/s^2 - significant initial bias uncertainty
+    initial_gyro_bias_sigma: 0.01    # rad/s - significant gyro bias uncertainty
+
+    # ==========================================================================
+    # Buffer Configuration
+    # ==========================================================================
+    imu_buffer_max_size: 5000        # large buffer for dense processing and delays
+
+    # ==========================================================================
+    # ENU Origin (optional - if not set, uses first GNSS fix)
+    # ==========================================================================
     origin_lat: 38.42391162772634
     origin_lon: -110.78490558433397
     origin_alt: 0.0
