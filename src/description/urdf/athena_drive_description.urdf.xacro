@@ -5,13 +5,8 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
     <xacro:macro name="description">
         <link name="base_link">
-            <inertial>
-                <origin xyz="0.775305042176281 -0.0692748019047986 -0.475175318827691" rpy="0 0 0" />
-                <mass value="44.0454429414672" />
-                <inertia ixx="1.41725466889743" ixy="0.00803894609354262" ixz="-1.19304822311593E-17" iyy="1.33698338807128" iyz="1.62926079635059E-16" izz="2.58380655400253" />
-            </inertial>
             <visual>
-                <origin xyz="0 0 0" rpy="0 0 0" />
+                <origin xyz="-0.775305042176281 0.0692748019047986 0.475175318827691" rpy="0 0 -0.094743" />
                 <geometry>
                     <mesh filename="package://description/meshes/chassis_base_link.STL" />
                 </geometry>
@@ -20,7 +15,7 @@
                 </material>
             </visual>
             <collision>
-                <origin xyz="0 0 0" rpy="0 0 0" />
+                <origin xyz="-0.775305042176281 0.0692748019047986 0.475175318827691" rpy="0 0 -0.094743" />
                 <geometry>
                     <mesh filename="package://description/meshes/chassis_base_link.STL" />
                 </geometry>
@@ -51,12 +46,13 @@
         </link>
 
         <joint name="suspension_front_left_joint" type="fixed">
-            <origin xyz="0.61263 0.22146 -0.74592" rpy="1.5708 0 0.094743" />
+            <origin xyz="-.13 0.2355 -.26" rpy="1.5708 0 0" />
             <parent link="base_link" />
             <child link="suspension_front_left_link" />
             <axis xyz="0 0 -1" />
             <limit lower="-1.0471975512" upper="1.0471975512" effort="200" velocity="3" />
         </joint>
+
 
         <link name="swerve_mount_1_link">
             <inertial>
@@ -302,7 +298,7 @@
 
         <link name="suspension_front_right_link">
             <inertial>
-                <origin xyz="0.0996575069633246 0.177857108210349 0.0120793884653498" rpy="0 0 0" />
+                <origin xyz="0.0 0.177857108210349 0.0120793884653498" rpy="0 0 0" />
                 <mass value="0.815137674139981" />
                 <inertia ixx="0.00362369286611303" ixy="2.10533763884314E-06" ixz="-1.88068045019413E-07" iyy="0.0343314249178962" iyz="-6.67186692298955E-08" izz="0.0378758255771416" />
             </inertial>
@@ -324,7 +320,7 @@
         </link>
 
         <joint name="suspension_front_right_joint" type="fixed">
-            <origin xyz="0.66803 -0.36146 -0.74592" rpy="1.5708 0 0.094743" />
+            <origin xyz="-.13 -0.36146 -.26" rpy="1.5708 0 0" />
             <parent link="base_link" />
             <child link="suspension_front_right_link" />
             <axis xyz="0 0 1" />
@@ -385,7 +381,7 @@
         </link>
 
         <joint name="steer_fr_joint" type="revolute">
-            <origin xyz="0 0 0.059903" rpy="3.1416 0.094743 3.1416" />
+            <origin xyz="0 0 0.059903" rpy="3.1416 0.0 3.1416" />
             <parent link="swerve_mount_2_link" />
             <child link="steer_2_link" />
             <axis xyz="0 1 0" />
@@ -416,7 +412,7 @@
         </link>
 
         <joint name="wheel_bracket_2_joint" type="fixed">
-            <origin xyz="0.0225042151326936 -0.128534743589743 0.0550203250295025" rpy="0 0.0947430505373176 0" />
+            <origin xyz="0.0225042151326936 -0.128534743589743 0.0550203250295025" rpy="0 0.0 0" />
             <parent link="steer_2_link" />
             <child link="wheel_bracket_2_link" />
             <axis xyz="0 0 0" />
@@ -506,7 +502,7 @@
         </link>
 
         <joint name="steer_br_joint" type="revolute">
-            <origin xyz="0 0 0.0599025014000917" rpy="0 -0.0947430505373176 0" />
+            <origin xyz="0 0 0.0599025014000917" rpy="0 0.0 0" />
             <parent link="swerve_mount_3_link" />
             <child link="steer_3_link" />
             <axis xyz="0 1 0" />
@@ -537,7 +533,7 @@
         </link>
 
         <joint name="wheel_bracket_3_joint" type="fixed">
-            <origin xyz="-0.011719658421911 -0.128534743589743 0.0584684115770519" rpy="0 0.0947430505373176 0" />
+            <origin xyz="-0.011719658421911 -0.128534743589743 0.0584684115770519" rpy="0 0.0 0" />
             <parent link="steer_3_link" />
             <child link="wheel_bracket_3_link" />
             <axis xyz="0 0 0" />
@@ -572,5 +568,14 @@
             <child link="propulsion_3_link" />
             <axis xyz="0 0 1" />
         </joint>
+        <!-- Base footprint frame with inverted X and Y axes -->
+        <link name="base_footprint" />
+
+        <joint name="base_footprint_joint" type="fixed">
+            <origin xyz="0 0 0" rpy="0 0 3.14159265359" />
+            <parent link="base_footprint" />
+            <child link="base_link" />
+        </joint>
+
     </xacro:macro>
 </robot>

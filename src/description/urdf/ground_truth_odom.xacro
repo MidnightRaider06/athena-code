@@ -1,15 +1,13 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-    <xacro:macro name="ground_truth_odometry" params="odom_frame:=odom robot_base_frame:=base_link odom_topic:=/odom/ground_truth update_rate:=50">
+    <xacro:macro name="ground_truth_odometry" params="robot_base_frame:=base_footprint odom_frame:=odom">
         <gazebo>
-            <plugin filename="ignition-gazebo-odometry-publisher-system" name="ignition::gazebo::systems::OdometryPublisher">
+            <plugin filename="libignition-gazebo-odometry-publisher-system.so" 
+                    name="ignition::gazebo::systems::OdometryPublisher">
                 <odom_frame>${odom_frame}</odom_frame>
                 <robot_base_frame>${robot_base_frame}</robot_base_frame>
-                <odom_topic>${odom_topic}</odom_topic>
-                <odom_covariance_topic>${odom_topic}/covariance</odom_covariance_topic>
-                <tf_topic>${odom_topic}/tf</tf_topic>
-                <dimensions>3</dimensions>
-                <odom_publish_frequency>${update_rate}</odom_publish_frequency>
+                <odom_topic>/odom/ground_truth</odom_topic>
+                <odom_publish_frequency>50</odom_publish_frequency>
             </plugin>
         </gazebo>
     </xacro:macro>

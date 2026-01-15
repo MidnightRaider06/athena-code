@@ -14,24 +14,38 @@ controller_manager:
 
 ackermann_steering_controller:
   ros__parameters:
-
+    # Joint names
     rear_wheels_names: ["propulsion_fl_joint", "propulsion_fr_joint"]
-    
     front_wheels_names: ["steer_fl_joint", "steer_fr_joint"]
     
+    # Vehicle dimensions
+    wheelbase: 0.8382
     front_wheel_track: 0.6604
     rear_wheel_track: 0.6604
-    wheelbase: 0.8382
     front_wheels_radius: 0.254
     rear_wheels_radius: 0.254
+    
+    # Steering configuration
+    front_steering: true
+    
+    # Control parameters
     use_stamped_vel: true
-    publish_rate: 50.0
-
-    odom_frame_id: "odom"
-    base_frame_id: "base_link"
-    publish_odom: true   
-    publish_odom_tf: true   
+    open_loop: false
+    reduce_wheel_speed_until_steering_reached: false
+    velocity_rolling_window_size: 10
     reference_timeout: 0.2
+    
+    # Frame IDs
+    base_frame_id: "base_footprint"
+    odom_frame_id: "odom"
+    
+    # Odometry configuration
+    enable_odom_tf: false
+    position_feedback: false
+    
+    # Covariance
+    twist_covariance_diagonal: [0.0, 7.0, 14.0, 21.0, 28.0, 35.0]
+    pose_covariance_diagonal: [0.0, 7.0, 14.0, 21.0, 28.0, 35.0]
 
 
 rear_steer_position_controller:

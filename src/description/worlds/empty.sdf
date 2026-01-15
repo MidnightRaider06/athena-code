@@ -1,6 +1,8 @@
 <?xml version="1.0" ?>
 <sdf version="1.7">
   <world name="default">
+    <gravity>0 0 -9.81</gravity>
+
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>
       <world_frame_orientation>ENU</world_frame_orientation>

@@ -40,15 +40,15 @@
   <xacro:description/>
 
 
-  <xacro:imu_sensor parent="base_link">
-    <origin xyz="0 0 0.0" rpy="0 0 0"/>
+  <xacro:imu_sensor parent="base_footprint">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
   </xacro:imu_sensor>
 
-  <xacro:gps_sensor parent="base_link">
-    <origin xyz="0 0 0.0" rpy="0 0 0"/>
+  <xacro:gps_sensor parent="base_footprint">
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
   </xacro:gps_sensor>
 
-  <xacro:ground_truth_odometry/>
+  <xacro:ground_truth_odometry robot_base_frame="base_footprint"/>
 
   <xacro:depth_camera parent_link="base_link"> 
       <origin xyz="0.75 0 -0.37" rpy="0 0 0"/> 
