@@ -26,6 +26,17 @@ def generate_launch_description():
         Node(
             package='ros_gz_bridge',
             executable='parameter_bridge',
+            name='depth_camera_bridge',
+            output='screen',
+            arguments=[
+                '/depth_camera@sensor_msgs/msg/Image[ignition.msgs.Image',
+                '/depth_camera/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked',
+            ],
+        ),
+
+        Node(
+            package='ros_gz_bridge',
+            executable='parameter_bridge',
             name='clock_bridge',
             output='screen',
             arguments=[

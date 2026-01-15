@@ -15,6 +15,7 @@
   <xacro:include filename="imu.xacro"/>
   <xacro:include filename="gps.xacro"/>
   <xacro:include filename="ground_truth_odom.xacro"/>
+  <xacro:include filename="depth_camera.xacro"/> 
 
 
   <!-- Load robot's macro with parameters -->
@@ -48,6 +49,10 @@
   </xacro:gps_sensor>
 
   <xacro:ground_truth_odometry/>
+
+  <xacro:depth_camera parent_link="base_link"> 
+      <origin xyz="0.75 0 -0.37" rpy="0 0 0"/> 
+  </xacro:depth_camera>
 
   <xacro:if value="$(arg use_mock_hardware)">
     <xacro:athena_drive_ros2_control
