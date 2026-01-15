@@ -10,6 +10,8 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(action_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/CANA.msg"
@@ -18,7 +20,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/JointReceiver.msg"
   "msg/SystemInfo.msg"
   "srv/SetController.srv"
-  DEPENDENCIES std_msgs geometry_msgs sensor_msgs
+  "action/NavigateToGPS.action"
+  DEPENDENCIES std_msgs geometry_msgs sensor_msgs builtin_interfaces action_msgs
 )
 
 ament_package()

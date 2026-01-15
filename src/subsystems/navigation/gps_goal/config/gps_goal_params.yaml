@@ -1,0 +1,7 @@
+gps_goal_server:
+  ros__parameters:
+    origin_lat: 38.42391162772634
+    origin_lon: -110.78490558433397
+    origin_alt: 0.0
+    map_frame: "map"
+    default_position_tolerance: 2.0

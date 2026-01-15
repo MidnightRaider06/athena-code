@@ -1,0 +1,13 @@
+# Goal: GPS coordinates and optional tolerance
+float64 latitude           # Target latitude in decimal degrees
+float64 longitude          # Target longitude in decimal degrees
+float32 position_tolerance # Position tolerance in meters (0.0 = use Nav2 default)
+---
+# Result: Navigation outcome
+bool success               # Whether the goal was reached successfully
+string message             # Status message
+---
+# Feedback: Navigation progress (relayed from Nav2)
+float32 distance_remaining          # Distance to goal in meters
+builtin_interfaces/Duration estimated_time_remaining  # Estimated time to reach goal
+geometry_msgs/PoseStamped current_pose                # Current robot pose
