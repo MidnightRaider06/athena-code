@@ -1,6 +1,6 @@
 dem_costmap_converter:
   ros__parameters:
-    dem_file_path: "maps/north_site800m.tif"                  # override via launch-arg if you like
+    dem_file_path: "src/subsystems/navigation/athena_map/maps/north_site800m.tif"                  # override via launch-arg if you like
     map_resolution: 1.0
     max_passable_slope_degrees: 15.0
     output_frame: map

@@ -13,26 +13,26 @@ def generate_launch_description():
     athena_map_share = get_package_share_directory('athena_map')
     dem_launch = os.path.join(athena_map_share, 'launch', 'dem_costmap.launch.py')
 
-    nav2_bringup_share = get_package_share_directory('nav2_bringup')
-    nav2_nav = os.path.join(nav2_bringup_share, 'launch', 'navigation_launch.py')
+    athena_planner_share = get_package_share_directory('athena_planner')
+    nav2_nav = os.path.join(athena_planner_share, 'launch', 'nav2_nodes.launch.py')
 
     default_params = PathJoinSubstitution([
         FindPackageShare('athena_planner'), 'config', 'nav2_params.yaml'
     ])
     params_file = LaunchConfiguration('params_file')
 
-    # --- Frame names (override if your robot uses different ones) ---
     map_frame  = LaunchConfiguration('map_frame')
     odom_frame = LaunchConfiguration('odom_frame')
     base_frame = LaunchConfiguration('base_frame')
 
-    # --- Static TFs (identity transforms for bring-up/testing) ---
-    # map -> odom
+    use_respawn = LaunchConfiguration('use_respawn')
+    log_level = LaunchConfiguration('log_level')
+
+
     static_map_to_odom = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
         name='static_map_to_odom',
-        # args: x y z roll pitch yaw parent child
         arguments=['400', '400', '0', '0', '0', '0', map_frame, odom_frame],
         output='screen',
     )
@@ -56,22 +56,26 @@ def generate_launch_description():
         DeclareLaunchArgument('map_frame',  default_value='map'),
         DeclareLaunchArgument('odom_frame', default_value='odom'),
         DeclareLaunchArgument('base_frame', default_value='base_link'),
+        DeclareLaunchArgument('use_respawn', default_value='False',
+            description='Whether to respawn if a node crashes'),
+        DeclareLaunchArgument('log_level', default_value='info',
+            description='Log level for nav2 nodes'),
 
         SetRemap(src='cmd_vel', dst='/cmd_vel_nav2'),
 
-        # Static TFs (identity by default)
         static_map_to_odom,
         twist_stamper_node,
 
         IncludeLaunchDescription(PythonLaunchDescriptionSource(dem_launch)),
 
-        # Nav2 core stack (planner/controller/smoother/behavior/BT nav + lifecycle)
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(nav2_nav),
             launch_arguments={
                 'params_file': params_file,
                 'use_sim_time': 'true',
-                'autostart': 'true'
+                'autostart': 'true',
+                'use_respawn': use_respawn,
+                'log_level': log_level
             }.items()
         ),
     ])
