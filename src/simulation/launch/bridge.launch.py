@@ -29,8 +29,8 @@ def generate_launch_description():
             name='depth_camera_bridge',
             output='screen',
             arguments=[
-                '/depth_camera@sensor_msgs/msg/Image[ignition.msgs.Image',
-                '/depth_camera/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked',
+                '/depth_camera@sensor_msgs/msg/Image@gz.msgs.Image',
+                '/depth_camera/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked',
             ],
         ),
 

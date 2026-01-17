@@ -11,11 +11,16 @@ ARGUMENTS = [
     DeclareLaunchArgument('rviz', default_value='false',
                           choices=['true', 'false'],
                           description='Start rviz.'),
+    DeclareLaunchArgument('rqt', default_value='false',
+                          description='Open RQt.'),
+    DeclareLaunchArgument('image_topic', default_value='/depth_camera',
+                          description='Topic to start viewing in RQt.'),
     DeclareLaunchArgument('use_sim_time', default_value='true',
                           choices=['true', 'false'],
                           description='use_sim_time'),
     DeclareLaunchArgument('namespace', default_value='',
                           description='Robot namespace'),
+                          
     
 ]
 
@@ -70,7 +75,16 @@ def generate_launch_description():
             executable='rviz2',
             name='rviz2',
             output='screen',
-            condition=conditions.IfCondition(LaunchConfiguration('rviz'))
+            condition=conditions.IfCondition(LaunchConfiguration('rviz')),
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
+        ),
+        
+        Node(
+            package='rqt_image_view',
+            executable='rqt_image_view',
+            name='rqt',
+            arguments=[LaunchConfiguration('image_topic')],
+            condition=conditions.IfCondition(LaunchConfiguration('rqt'))
         ),
     ])
 
