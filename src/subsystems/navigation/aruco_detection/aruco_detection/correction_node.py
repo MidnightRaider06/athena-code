@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
-from interfaces.msg import BB
+from msgs.msg import BB
 
 class CorrectionNode(Node):
     def __init__(self):

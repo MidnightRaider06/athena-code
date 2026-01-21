@@ -4,7 +4,7 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from cv_bridge import CvBridge
 import cv2
-from interfaces.msg import BB
+from msgs.msg import BB
 
 class ZedArUcoNode(Node):
     def __init__(self):
