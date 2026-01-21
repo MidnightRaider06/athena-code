@@ -1,0 +1,10 @@
+int64 img_width
+int64 img_height
+int64 bb_top_left_x
+int64 bb_top_left_y
+int64 bb_bottom_right_x
+int64 bb_bottom_right_y
+int64 bb_top_right_x
+int64 bb_top_right_y
+int64 bb_bottom_left_x
+int64 bb_bottom_left_y
