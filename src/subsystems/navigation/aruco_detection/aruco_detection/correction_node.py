@@ -82,12 +82,12 @@ class CorrectionNode(Node):
         correction_message.header.stamp = self.get_clock().now().to_msg()
         correction_message.twist.angular.z = output  # Rotate based on PD output
 
-        correction_message.twist.linear.x = 0.2
+        correction_message.twist.linear.x = 0.5
         
         # Move forward if nearly aligned
         if abs(error) < 15:
             correction_message.twist.angular.z = 0.0
-            correction_message.twist.linear.x = 0.5
+            correction_message.twist.linear.x = 1.0
 
         # Publish correction
         self.heading_pub.publish(correction_message)
