@@ -14,7 +14,6 @@ find_package(builtin_interfaces REQUIRED)
 find_package(action_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/BB.msg"
   "msg/CANA.msg"
   "msg/CANB.msg"
   "msg/Currentdraw.msg"
