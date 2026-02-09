@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 10  # Hz
+    update_rate: 100  # Hz
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
@@ -100,18 +100,21 @@ manual_arm_cylindrical_controller:
 
 manual_arm_joint_by_joint_controller:
   ros__parameters:
-    joints:
+    velocity_joints:
       - base_yaw
       - shoulder_pitch
       - elbow_pitch
       - wrist_pitch
       - wrist_roll
-      # - gripper_claw
-    interface_name: velocity
+      - gripper_claw
+    position_joints:
+      - actuator
+    # interface_name: velocity
     joint_max_velocities:
       - 62.83185307 # 10 rot/s, please change dawg
       - 0.05148721  # 2.95 dps
       - 0.05148721
       - 0.785398    # 45 dps
       - 0.785398
-      # - 0.005       # TODO: Find this
+      - 0.005       # TODO: Find this
+      - 0.03        # Actuator max displacement

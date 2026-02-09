@@ -22,7 +22,8 @@ def generate_launch_description():
             name='ground_truth_tf_publisher',
             output='screen',
             parameters=[{
-                'child_frame_id': LaunchConfiguration('child_frame_id')
+                'child_frame_id': LaunchConfiguration('child_frame_id'),
+                'use_sim_time': True
             }]
         ),
     ])

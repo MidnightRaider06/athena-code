@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>killswitch_ros2_control</name>
+  <version>0.1.0</version>
+  <description>Killswitch hardware interface for ros2_control - CAN-based power killswitch system</description>
+  <maintainer email="dwarakeshbaraneetharan@gmail.com">Dwarakesh Baraneetharan</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <build_depend>ament_cmake</build_depend>
+
+  <depend>hardware_interface</depend>
+  <depend>pluginlib</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+
+  <!-- Real-time CAN communication library -->
+  <build_depend>umdloop_can_library</build_depend>
+  <exec_depend>umdloop_can_library</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <exec_depend>ament_cmake</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

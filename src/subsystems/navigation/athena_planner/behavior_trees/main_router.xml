@@ -1,0 +1,36 @@
+<root main_tree_to_execute="MainTree">
+
+  <!-- Bring in the other trees -->
+  <include ros_pkg="athena_planner"  path="behavior_trees/gnss_navigation.xml"/>
+  <include ros_pkg="athena_planner"  path="behavior_trees/object_detection_navigation.xml"/>
+  <include ros_pkg="athena_planner"  path="behavior_trees/aruco_detection_navigation.xml"/>
+
+  <BehaviorTree ID="MainTree">
+    <PipelineSequence name="ModeRouter">
+
+      <NavSelector topic_name="/nav_mode" default_nav_mode="GNSS" nav_mode="{nav_mode}" />
+
+      <ReactiveFallback name="SelectMode">
+
+        <BlackboardCheckString value_A="{nav_mode}" value_B="GNSS" return_on_mismatch="FAILURE">
+          <SubTree ID="GNSSNavigation" goal="{goal}" path="{path}" __shared_blackboard="true"/>
+        </BlackboardCheckString>
+
+        <BlackboardCheckString value_A="{nav_mode}" value_B="ObjectDetection" return_on_mismatch="FAILURE">
+          <SubTree ID="ObjectDetectionNavigation" __shared_blackboard="true" />
+        </BlackboardCheckString>
+
+        <BlackboardCheckString value_A="{nav_mode}" value_B="ArucoDetection" return_on_mismatch="FAILURE">
+          <SubTree ID="ArucoDetectionNavigation" __shared_blackboard="true" />
+        </BlackboardCheckString>
+
+        <!-- Default fallback -->
+        <SubTree ID="GNSSNavigation" goal="{goal}" path="{path}" __shared_blackboard="true" />
+
+      </ReactiveFallback>
+
+
+
+    </PipelineSequence>
+  </BehaviorTree>
+</root>

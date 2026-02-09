@@ -20,19 +20,21 @@ ARGUMENTS = [
                           description='use_sim_time'),
     DeclareLaunchArgument('namespace', default_value='',
                           description='Robot namespace'),
-                          
+    DeclareLaunchArgument('world_name', default_value='',
+                          description='World name'),
     
 ]
 
 def generate_launch_description():
-    pkg_share = get_package_share_directory('description')
-    
-    urdf_file = os.path.join(pkg_share, 'urdf', 'athena_drive.urdf.xacro')
-    controllers_file = os.path.join(pkg_share, 'config', 'athena_drive_sim_controllers.yaml')
+    pkg_description = get_package_share_directory('description')
+    pkg_sim = get_package_share_directory('simulation')
 
+    urdf_file = os.path.join(pkg_description, 'urdf', 'athena_drive.urdf.xacro')
+    controllers_file = os.path.join(pkg_description, 'config', 'athena_drive_sim_controllers.yaml')
+    rviz_config_file = os.path.join(pkg_sim, 'rviz', 'sim.rviz')
     
     namespace = LaunchConfiguration('namespace')
-    robot_name = 'rover'
+    robot_name = 'athena'
 
     robot_description_content = Command([
         'xacro ', urdf_file,
@@ -62,6 +64,7 @@ def generate_launch_description():
             package='ros_gz_sim',
             executable='create',
             arguments=['-name', robot_name,
+                       '-world', LaunchConfiguration('world_name'),
                        '-x', '0.0',
                        '-y', '0.0',
                        '-z', '3.0',
@@ -75,8 +78,9 @@ def generate_launch_description():
             executable='rviz2',
             name='rviz2',
             output='screen',
-            condition=conditions.IfCondition(LaunchConfiguration('rviz')),
-            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
+            arguments=['-d', rviz_config_file],
+            parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
+            condition=conditions.IfCondition(LaunchConfiguration('rviz'))
         ),
         
         Node(

@@ -14,13 +14,15 @@ def generate_launch_description():
    use_respawn = LaunchConfiguration('use_respawn')
    log_level = LaunchConfiguration('log_level')
 
+   bt_dir = PathJoinSubstitution([
+        FindPackageShare('athena_planner'), 
+        'behavior_trees'
+    ])
 
    default_bt_xml_path = PathJoinSubstitution([
-       FindPackageShare('athena_planner'),
-       'behavior_trees',
-       'navigate_w_replanning_time.xml'
-   ])
-
+        bt_dir,
+        'main_router.xml'
+    ])
 
    lifecycle_nodes = [
        'controller_server',
@@ -150,9 +152,10 @@ def generate_launch_description():
                respawn_delay=2.0,
                parameters=[
                    params_file,
-                   {'default_nav_to_pose_bt_xml': default_bt_xml_path}
+                   {'default_nav_to_pose_bt_xml': default_bt_xml_path},
                ],
                arguments=['--ros-args', '--log-level', log_level],
+               cwd=bt_dir,
                remappings=remappings,
        )
    )

@@ -25,8 +25,10 @@ float getClawVelocity(TalonSRX *); // Retrieves Velocity of claw in m/s
 
 // Setting States
 void setDutyCycle(TalonSRX *, double, int); // Sets duty cycle, aka percent of max speed basically
-float setVelocity(TalonSRX *, double, int); // Sets velocity (units per 100ms) based on input velocity (mm/s), returns this as well
-float setPosition(TalonSRX *, double, int); // Sets position (Talon units) based on input position (cm), returns this as well
+float setVelocityFromLinearVelocity(TalonSRX *, double, int); // Sets velocity (units per 100ms) based on input velocity (mm/s), returns this as well
+float setVelocityFromAngularVelocity(TalonSRX *, double, int); // Sets velocity (units per 100ms) based on input velocity (radians/s), returns this as well
+float setPositionFromDisplacement(TalonSRX *, double, int); // Sets position (Talon units) based on input displacement (cm), returns this as well
+float setPositionFromJointCommand(TalonSRX *, double, int); // Sets position (Talon units) based on input joint command (radians), returns this as well
 void stopMotor(TalonSRX *, int); // Stops the motor
 
 #endif

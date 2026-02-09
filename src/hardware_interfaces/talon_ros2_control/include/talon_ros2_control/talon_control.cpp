@@ -101,18 +101,16 @@ float getClawVelocity(TalonSRX *motor) {
 }
 
 void setDutyCycle(TalonSRX *motor, double dutyCycle, int ms) {
-    // printf("Spin command received...\n\r");
 	motor->Set(ctre::phoenix::motorcontrol::ControlMode::PercentOutput, dutyCycle);
 	ctre::phoenix::unmanaged::Unmanaged::FeedEnable(ms); // activate motor for (ms) milliseconds
 }
 
-float setVelocity(TalonSRX *motor, double claw_vel, int ms) {
+float setVelocityFromLinearVelocity(TalonSRX *motor, double claw_vel, int ms) {
 	// float desired_rpm = joy_input * MAX_RPM;
 	// float desired_rev_per_100ms = desired_rpm / 600; // 600 100ms to 1 minute
 
 	//TO DO: why does the 5 fix this. I dont have a clue rn
 	float desired_talon_units_per_100ms = convertRevtoTalonUnits(convertDistanceToRev((claw_vel*5)/10)); // m/s -> m/100ms -> rev/100ms -> talon/100ms
-    // printf("Spin command received...\n\r");
 
 	motor->Set(ctre::phoenix::motorcontrol::ControlMode::Velocity, desired_talon_units_per_100ms);
 	ctre::phoenix::unmanaged::Unmanaged::FeedEnable(ms); // activate motor for (ms) milliseconds
@@ -120,12 +118,29 @@ float setVelocity(TalonSRX *motor, double claw_vel, int ms) {
 	return desired_talon_units_per_100ms;
 }
 
-float setPosition(TalonSRX *motor, double claw_dist, int ms) {
+float setVelocityFromAngularVelocity(TalonSRX *motor, double joint_velocity, int ms) {
+	float desired_talon_units_per_100ms = convertRevtoTalonUnits(joint_velocity / (2*M_PI*10)); // rad/s -> rad/100ms -> rev/100ms -> talon/100ms
+
+	motor->Set(ctre::phoenix::motorcontrol::ControlMode::Velocity, desired_talon_units_per_100ms);
+	ctre::phoenix::unmanaged::Unmanaged::FeedEnable(ms); // activate motor for (ms) milliseconds
+
+	return desired_talon_units_per_100ms;
+}
+
+float setPositionFromDisplacement(TalonSRX *motor, double claw_displacement, int ms) {
 	// float length_range = LENGTH_RANGE * 2.54; // in cm
 	// float desired_pos = (joy_input * length_range) / DISTANCE_PER_REV; // in rev
 	// float desired_talon_units = convertRevtoTalonUnits(desired_pos);
 
-	float desired_talon_units = convertRevtoTalonUnits(convertDistanceToRev(claw_dist)); // m -> rev -> talon units
+	float desired_talon_units = convertRevtoTalonUnits(convertDistanceToRev(claw_displacement)); // m -> rev -> talon units
+	motor->Set(ctre::phoenix::motorcontrol::ControlMode::Position, desired_talon_units);
+	ctre::phoenix::unmanaged::Unmanaged::FeedEnable(ms); // activate motor for (ms) milliseconds
+
+	return desired_talon_units;
+}
+
+float setPositionFromJointCommand(TalonSRX *motor, double joint_position, int ms) {
+	float desired_talon_units = convertRevtoTalonUnits(joint_position / (2*M_PI)); // rad -> rev -> talon units
 	motor->Set(ctre::phoenix::motorcontrol::ControlMode::Position, desired_talon_units);
 	ctre::phoenix::unmanaged::Unmanaged::FeedEnable(ms); // activate motor for (ms) milliseconds
 
@@ -139,14 +154,14 @@ void stopMotor(TalonSRX *motor, int ms){
 }
 
 // float runMotor(TalonSRX *motor, double speed, int ms) {
-// 	float velocity = setVelocity(motor, speed); // motor receives talon units/100ms, function returns rev/s
+// 	float velocity = setVelocityFromLinearVelocity(motor, speed); // motor receives talon units/100ms, function returns rev/s
 // 	// setDutyCycle(motor, speed); // set percent output and direction
 // 	ctre::phoenix::unmanaged::Unmanaged::FeedEnable(ms); // activate motor for (ms) milliseconds
 // 	return velocity;
 // }
 
 // float setMotorPosition(TalonSRX *motor, double joy_input, int ms) {
-// 	float position = setPosition(motor, joy_input); // in Talon Units
+// 	float position = setPositionFromDisplacement(motor, joy_input); // in Talon Units
 // 	ctre::phoenix::unmanaged::Unmanaged::FeedEnable(ms); // activate motor for (ms) milliseconds
 // 	return position;
 // }

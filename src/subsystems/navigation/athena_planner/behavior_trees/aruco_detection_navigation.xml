@@ -1,0 +1,7 @@
+<root>
+  <BehaviorTree ID="ArucoDetectionNavigation">
+    <ForceSuccess>
+      <Wait wait_duration="0.01"/>
+    </ForceSuccess>
+  </BehaviorTree>
+</root>

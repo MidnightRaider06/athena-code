@@ -48,7 +48,7 @@ class JoystickPublisher(Node):
 
         # Only begin once a joystick is connected
         while(joysticks == 0):
-            self.get_logger().info("No controllers are connected!")
+            # self.get_logger().info("No controllers are connected!")
             time.sleep(0.25)
             for event in pygame.event.get():
                 if event.type == pygame.JOYDEVICEADDED:

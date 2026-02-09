@@ -15,7 +15,7 @@ controller_manager:
 ackermann_steering_controller:
   ros__parameters:
     # Joint names
-    rear_wheels_names: ["propulsion_fl_joint", "propulsion_fr_joint"]
+    rear_wheels_names: ["propulsion_bl_joint", "propulsion_br_joint"]
     front_wheels_names: ["steer_fl_joint", "steer_fr_joint"]
     
     # Vehicle dimensions

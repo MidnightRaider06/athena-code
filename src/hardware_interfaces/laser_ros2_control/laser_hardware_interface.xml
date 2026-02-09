@@ -1,0 +1,10 @@
+<library path="laser_ros2_control">
+  <class name="laser_ros2_control/LaserHardwareInterface"
+         type="laser_ros2_control::LaserHardwareInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      Hardware interface for spectrometry laser control via ros2_control.
+      CAN-based on/off control with temperature readback.
+    </description>
+  </class>
+</library>

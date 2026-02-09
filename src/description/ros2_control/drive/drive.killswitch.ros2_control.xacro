@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="killswitch_ros2_control" params="name can_interface:=can0">
+
+    <ros2_control name="${name}" type="system">
+      <hardware>
+        <plugin>killswitch_ros2_control/KillswitchHardwareInterface</plugin>
+        <param name="can_interface">${can_interface}</param>
+        <param name="can_id">0x100</param>
+      </hardware>
+
+      <gpio name="${name}">
+        <state_interface name="kill_all_sent"/>
+        <state_interface name="kill_main_sent"/>
+        <state_interface name="kill_jetson_sent"/>
+        <state_interface name="is_connected"/>
+        <command_interface name="kill_all"/>
+        <command_interface name="kill_main"/>
+        <command_interface name="kill_jetson"/>
+      </gpio>
+
+    </ros2_control>
+
+  </xacro:macro>
+
+</robot>

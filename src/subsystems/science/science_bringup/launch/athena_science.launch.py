@@ -187,6 +187,18 @@ def generate_launch_description():
             )
         ]
 
+    # GPIO controller spawner for Laser
+    gpio_controller_names = ["laser_gpio_controller"]
+    gpio_controller_spawners = []
+    for controller in gpio_controller_names:
+        gpio_controller_spawners += [
+            Node(
+                package="controller_manager",
+                executable="spawner",
+                arguments=[controller, "-c", "/controller_manager"],
+            )
+        ]
+
     inactive_robot_controller_names = ["joint_group_velocity_controller", "joint_group_position_controller"]
     inactive_robot_controller_spawners = [] # Set the ones you want inactive in the beginning (e.g., velocity controller, etc.)
     for controller in inactive_robot_controller_names:
@@ -195,6 +207,22 @@ def generate_launch_description():
                 package="controller_manager",
                 executable="spawner",
                 arguments=[controller, "-c", "/controller_manager", "--inactive"],
+            )
+        ]
+
+    # Delay GPIO controller spawners after joint_state_broadcaster
+    delay_gpio_controller_spawners_after_joint_state_broadcaster_spawner = []
+    for i, controller in enumerate(gpio_controller_spawners):
+        delay_gpio_controller_spawners_after_joint_state_broadcaster_spawner += [
+            RegisterEventHandler(
+                event_handler=OnProcessExit(
+                    target_action=(
+                        gpio_controller_spawners[i - 1]
+                        if i > 0
+                        else joint_state_broadcaster_spawner
+                    ),
+                    on_exit=[controller],
+                )
             )
         ]
 
@@ -279,4 +307,5 @@ def generate_launch_description():
         ]
         + delay_robot_controller_spawners_after_joint_state_broadcaster_spawner
         + delay_inactive_robot_controller_spawners_after_joint_state_broadcaster_spawner
+        + delay_gpio_controller_spawners_after_joint_state_broadcaster_spawner
     )

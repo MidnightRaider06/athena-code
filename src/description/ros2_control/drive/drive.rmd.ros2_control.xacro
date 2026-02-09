@@ -1,67 +1,58 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-
   <xacro:macro name="rmd_ros2_control" params="name">
-
     <ros2_control name="${name}" type="system">
       <hardware>
         <plugin>rmd_ros2_control/RMDHardwareInterface</plugin>
+        <param name="update_rate">10</param> <!-- Hz -->
+        <param name="logger_rate">5</param> <!-- Hz -->
+        <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
+        <param name="can_interface">can0</param>
       </hardware>
 
       <joint name="propulsion_fl_joint">
-        <param name="node_write_id">323</param> <!-- 0x143 -->
-        <param name="node_read_id">579</param> <!-- 0x243 -->
+        <param name="node_id">0x143</param>
         <param name="gear_ratio">1</param>
         <param name="joint_orientation">-1.0</param>
+        <param name="operating_velocity">150</param> <!-- motor dps -->
         <command_interface name="position"/>
         <command_interface name="velocity"/>
-        <state_interface name="position">
-          <param name="initial_value">0.0</param>
-        </state_interface>
+        <state_interface name="position"/>
         <state_interface name="velocity"/>
       </joint>
       
       <joint name="propulsion_fr_joint">
-        <param name="node_write_id">322</param> <!-- 0x142 -->
-        <param name="node_read_id">578</param> <!-- 0x242 -->
+        <param name="node_id">0x142</param>
         <param name="gear_ratio">1</param>
         <param name="joint_orientation">1.0</param>
+        <param name="operating_velocity">150</param> <!-- motor dps -->
         <command_interface name="position"/>
         <command_interface name="velocity"/>
-        <state_interface name="position">
-          <param name="initial_value">0.0</param>
-        </state_interface>
+        <state_interface name="position"/>
         <state_interface name="velocity"/>
       </joint>
 
       <joint name="propulsion_bl_joint">
-        <param name="node_write_id">321</param> <!-- 0x141 -->
-        <param name="node_read_id">577</param> <!-- 0x241 -->
+        <param name="node_id">0x141</param>
         <param name="gear_ratio">1</param>
         <param name="joint_orientation">-1.0</param>
+        <param name="operating_velocity">150</param> <!-- motor dps -->
         <command_interface name="position"/>
         <command_interface name="velocity"/>
-        <state_interface name="position">
-          <param name="initial_value">0.0</param>
-        </state_interface>
+        <state_interface name="position"/>
         <state_interface name="velocity"/>
       </joint>
       
       <joint name="propulsion_br_joint">
-        <param name="node_write_id">329</param> <!--0x149-->
-        <param name="node_read_id">585</param> <!--0x249-->
+        <param name="node_id">0x149</param>
         <param name="gear_ratio">1</param>
         <param name="joint_orientation">1.0</param>
+        <param name="operating_velocity">150</param> <!-- motor dps -->
         <command_interface name="position"/>
         <command_interface name="velocity"/>
-        <state_interface name="position">
-          <param name="initial_value">0.0</param>
-        </state_interface>
+        <state_interface name="position"/>
         <state_interface name="velocity"/>
       </joint>
-
     </ros2_control>
-
   </xacro:macro>
-
 </robot>

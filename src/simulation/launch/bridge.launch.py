@@ -9,7 +9,7 @@ def generate_launch_description():
             name='imu_bridge',
             output='screen',
             arguments=[
-                '/imu@sensor_msgs/msg/Imu@gz.msgs.IMU',
+                '/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
             ],
         ),
 

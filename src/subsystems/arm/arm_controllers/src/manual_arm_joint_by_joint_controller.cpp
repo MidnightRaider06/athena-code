@@ -1,23 +1,3 @@
-// Copyright (c) 2025, UMDLoop
-// Copyright (c) 2025, Stogl Robotics Consulting UG (haftungsbeschränkt) (template)
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-//
-// Source of this file are templates in
-// [RosTeamWorkspace](https://github.com/StoglRobotics/ros_team_workspace) repository.
-//
-
 #include "athena_arm_controllers/manual_arm_joint_by_joint_controller.hpp"
 
 #include <limits>
@@ -81,25 +61,8 @@ controller_interface::CallbackReturn ManualArmJointByJointController::on_configu
 {
   params_ = param_listener_->get_params();
 
-  if (!params_.state_joints.empty())
-  {
-    state_joints_ = params_.state_joints;
-  }
-  else
-  {
-    state_joints_ = params_.joints;
-  }
-
-  if (params_.joints.size() != state_joints_.size())
-  {
-    RCLCPP_FATAL(
-      get_node()->get_logger(),
-      "Size of 'joints' (%zu) and 'state_joints' (%zu) parameters has to be the same!",
-      params_.joints.size(), state_joints_.size());
-    return CallbackReturn::FAILURE;
-  }
-
-  joint_velocities_.resize(params_.joints.size(), 0.0); // Output
+  num_joints = static_cast<int>(params_.position_joints.size()) + static_cast<int>(params_.velocity_joints.size());
+  joint_velocities_.resize(num_joints, 0.0); // Output
   max_velocities_ = params_.joint_max_velocities;
 
   // topics QoS
@@ -154,7 +117,7 @@ controller_interface::CallbackReturn ManualArmJointByJointController::on_configu
 
   // TODO(anyone): Reserve memory in state publisher depending on the message type
   state_publisher_->lock();
-  state_publisher_->msg_.header.frame_id = params_.joints[0];
+  state_publisher_->msg_.header.frame_id = params_.velocity_joints[0];
   state_publisher_->unlock();
 
   RCLCPP_INFO(get_node()->get_logger(), "configure successful");
@@ -163,20 +126,6 @@ controller_interface::CallbackReturn ManualArmJointByJointController::on_configu
 
 void ManualArmJointByJointController::reference_callback(const std::shared_ptr<ControllerReferenceMsg> msg)
 {
-  /*
-  if (msg->joint_names.size() == params_.joints.size())
-  {
-    input_ref_.writeFromNonRT(msg);
-  }
-  else
-  {
-    RCLCPP_ERROR(
-      get_node()->get_logger(),
-      "Received %zu , but expected %zu joints in command. Ignoring message.",
-      msg->joint_names.size(), params_.joints.size());
-  }
-      */
-
   input_ref_.writeFromNonRT(msg);
 }
 
@@ -185,10 +134,16 @@ controller_interface::InterfaceConfiguration ManualArmJointByJointController::co
   controller_interface::InterfaceConfiguration command_interfaces_config;
   command_interfaces_config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
 
-  command_interfaces_config.names.reserve(params_.joints.size());
-  for (const auto & joint : params_.joints)
+  command_interfaces_config.names.reserve(num_joints);
+
+  for (const auto & joint : params_.velocity_joints)
   {
-    command_interfaces_config.names.push_back(joint + "/" + params_.interface_name);
+    command_interfaces_config.names.push_back(joint + "/velocity");
+  }
+
+  for (const auto & joint : params_.position_joints)
+  {
+    command_interfaces_config.names.push_back(joint + "/position");
   }
 
   return command_interfaces_config;
@@ -199,10 +154,13 @@ controller_interface::InterfaceConfiguration ManualArmJointByJointController::st
   controller_interface::InterfaceConfiguration state_interfaces_config;
   state_interfaces_config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
 
-  state_interfaces_config.names.reserve(state_joints_.size());
-  for (const auto & joint : state_joints_)
-  {
-    state_interfaces_config.names.push_back(joint + "/" + params_.interface_name);
+  state_interfaces_config.names.reserve(num_joints);
+  for (const auto & joint : params_.velocity_joints) {
+    state_interfaces_config.names.push_back(joint + "/velocity");
+  }
+
+  for (const auto & joint : params_.position_joints) {
+    state_interfaces_config.names.push_back(joint + "/position");
   }
 
   return state_interfaces_config;
@@ -211,10 +169,6 @@ controller_interface::InterfaceConfiguration ManualArmJointByJointController::st
 controller_interface::CallbackReturn ManualArmJointByJointController::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  // TODO(anyone): if you have to manage multiple interfaces that need to be sorted check
-  // `on_activate` method in `JointTrajectoryController` for exemplary use of
-  // `controller_interface::get_ordered_interfaces` helper function
-
   // Set default value in command
   reset_controller_reference_msg(*(input_ref_.readFromRT)(), joystick_axes, joystick_buttons);
 
@@ -224,8 +178,6 @@ controller_interface::CallbackReturn ManualArmJointByJointController::on_activat
 controller_interface::CallbackReturn ManualArmJointByJointController::on_deactivate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  // TODO(anyone): depending on number of interfaces, use definitions, e.g., `CMD_MY_ITFS`,
-  // instead of a loop
   for (size_t i = 0; i < command_interfaces_.size(); ++i)
   {
     command_interfaces_[i].set_value(std::numeric_limits<double>::quiet_NaN());
@@ -240,18 +192,22 @@ controller_interface::return_type ManualArmJointByJointController::update(
 
   if (!std::isnan((*current_ref)->axes[0]))
   {
-    // ODrive
+    // Base Yaw: L/R Left Stick
     joint_velocities_[0] = ((*current_ref)->buttons[1] == 1) ? 0.0 : (*current_ref)->axes[0] * max_velocities_[0];
 
-    // RMD
-    joint_velocities_[1] = ((*current_ref)->buttons[1] == 1) ? 0.0 : -(*current_ref)->axes[1] * max_velocities_[1]; // Shoulder Pitch
-    joint_velocities_[2] = (*current_ref)->axes[3] * max_velocities_[2];  // Elbow Pitch
+    // Shoulder Pitch: U/D Left Stick
+    joint_velocities_[1] = ((*current_ref)->buttons[1] == 1) ? 0.0 : -(*current_ref)->axes[1] * max_velocities_[1];
+    
+    // Elbow Pitch: U/D Right Stick
+    joint_velocities_[2] = (*current_ref)->axes[3] * max_velocities_[2];  
 
-    // SMC
+    // Wrist Pitch: U/D on Left Joystick AND O button 
     joint_velocities_[3] = -(*current_ref)->axes[1] * static_cast<float>((*current_ref)->buttons[1]) * max_velocities_[3];
+    
+    // Wrist Roll: L/R on Left Joystick AND O button
     joint_velocities_[4] = -(*current_ref)->axes[0] * static_cast<float>((*current_ref)->buttons[1]) * max_velocities_[4];
 
-    // Talons
+    // Gripper Claw: Bumpers and Triggers
     if ((*current_ref)->buttons[4] && (*current_ref)->buttons[5]) {
     // closeClaw(motor);
     } else if ((*current_ref)->buttons[4]) { // Left bumper
@@ -265,12 +221,32 @@ controller_interface::return_type ManualArmJointByJointController::update(
     } else{
       joint_velocities_[5] = 0.0;
     }
-    // RCLCPP_INFO(get_node()->get_logger(), "Talon: %f", joint_velocities_[5]);
+
+    // Actuator (EXPERIMENTAL)
+    // Pressing square activates actuator movement
+    if((*current_ref)->buttons[3] == 1){
+      actuator_active_ = true;
+      actuator_iterator = 0.001;
+      joint_velocities_[6] = 0.001; // to start off
+    }
+
+    // Once actuator reaches original position, stop movement
+    if (actuator_active_ = true && joint_velocities_[6] == 0.0 && actuator_iterator < 0){
+      actuator_active_ = false;
+    }
+
+    // Move actuator up to max position, then begin moving it down
+    if (joint_velocities_[6] >= max_velocities_[6] && actuator_active_ == true && actuator_iterator > 0){
+      actuator_iterator = -0.001;
+    }
+    joint_velocities_[6] = joint_velocities_[6] + actuator_iterator;
   }
   else{
-    RCLCPP_INFO(get_node()->get_logger(), "Returning NaN");
-    joint_velocities_.resize(6, 0.0);
+    // RCLCPP_INFO(get_node()->get_logger(), "Returning NaN");
+    joint_velocities_.resize(7, 0.0);
   }
+
+  // RCLCPP_INFO(get_node()->get_logger(), "Size of Command Interface: %d", command_interfaces_.size());
 
   for (size_t i = 0; i < command_interfaces_.size(); ++i)
   {

@@ -1,36 +1,32 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-
   <xacro:macro name="rmd_ros2_control" params="name">
-
     <ros2_control name="${name}" type="system">
       <hardware>
         <plugin>rmd_ros2_control/RMDHardwareInterface</plugin>
+        <param name="update_rate">10</param> <!-- Hz -->
+        <param name="logger_rate">5</param> <!-- Hz -->
+        <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
+        <param name="can_interface">can0</param>
       </hardware>
 
       <joint name="shoulder_pitch">
-        <param name="node_write_id">330</param> <!--0x14A -->
-        <param name="node_read_id">586</param> <!--0x24A -->
+        <param name="node_id">0x14A</param>
         <param name="gear_ratio">100</param>
         <param name="joint_orientation">1.0</param>
-        <state_interface name="position">
-          <param name="initial_value">-1.0</param>
-        </state_interface>
+        <param name="operating_velocity">150</param> <!-- motor dps -->
+        <state_interface name="position"/>
         <state_interface name="velocity"/>
       </joint>
       
       <joint name="elbow_pitch">
-        <param name="node_write_id">324</param> <!--0x144-->
-        <param name="node_read_id">580</param> <!--0x244-->
+        <param name="node_id">0x144</param>
         <param name="gear_ratio">100</param>
         <param name="joint_orientation">1.0</param>
-        <state_interface name="position">
-          <param name="initial_value">-2.0</param>
-        </state_interface>
+        <param name="operating_velocity">150</param> <!-- motor dps -->
+        <state_interface name="position"/>
         <state_interface name="velocity"/>
       </joint>
     </ros2_control>
-
   </xacro:macro>
-
 </robot>

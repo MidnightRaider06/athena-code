@@ -1,0 +1,12 @@
+[Unit]
+Description=CAN Interface Setup
+After=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/can-setup.sh
+ExecStop=/sbin/ip link set can0 down
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+<library path="led_ros2_control">
+  <class name="led_ros2_control/LEDHardwareInterface"
+         type="led_ros2_control::LEDHardwareInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      LED status indicator hardware interface via ros2_control.
+      GPIO output for controlling status LEDs.
+    </description>
+  </class>
+</library>

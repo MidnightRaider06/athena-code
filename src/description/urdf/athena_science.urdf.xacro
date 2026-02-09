@@ -9,6 +9,7 @@
   <xacro:include filename="$(find description)/ros2_control/science/science.stepper.ros2_control.xacro" />
   <xacro:include filename="$(find description)/ros2_control/science/science.servo.ros2_control.xacro" />
   <xacro:include filename="$(find description)/ros2_control/science/science.talon.ros2_control.xacro"/>
+  <xacro:include filename="$(find description)/ros2_control/science/science.laser.ros2_control.xacro"/>
   
   <!-- create link fixed to the "world" -->
   <link name="world"/>
@@ -30,7 +31,10 @@
     <xacro:servo_ros2_control name="servo"/>
 
     <!-- Import talon ros2_control description -->
-    <xacro:talon_ros2_control name="talon"/> 
+    <xacro:talon_ros2_control name="talon"/>
+
+    <!-- Import laser ros2_control description (CAN-based) -->
+    <xacro:laser_ros2_control name="spectrometry_laser"/>
   </xacro:unless>
 
 </robot>

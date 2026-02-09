@@ -2,6 +2,8 @@
 
 This repository contains all the code for UMDLoop's 2025-26 rover, Athena.
 
+When cloning, be sure to use `git clone --recursive [URL to Git repository]` to pull in the submodules found in `src/third-party`. Alternatively, run `git submodule update --init --recursive` if you have already cloned.
+
 ## How To Contribute
 
 ### Learning Git

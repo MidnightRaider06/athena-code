@@ -36,6 +36,10 @@ controller_manager:
     science_controller:
       type: science_controllers/ScienceManual
 
+    # Laser GPIO Controller (CAN-based)
+    laser_gpio_controller:
+      type: gpio_controllers/GpioCommandController
+
 joint_group_position_controller:                
   ros__parameters:
     joints:
@@ -43,9 +47,10 @@ joint_group_position_controller:
       - stepper_motor_b
       - talon_lift
       - talon_scoop
+      - rack_and_pinion_left
+      - rack_and_pinion_right
       - scoop_a
       - scoop_b
-
       - auger
       - cap
     interface_name: position
@@ -58,6 +63,8 @@ joint_group_velocity_controller:
       - talon_lift
       - talon_scoop
       - auger
+      - rack_and_pinion_left
+      - rack_and_pinion_right
       - scoop_a
       - scoop_b
       - auger
@@ -75,8 +82,12 @@ science_controller:
       - scoop_b
       - auger
       - cap
+      - rack_and_pinion_left
+      - rack_and_pinion_right
     stepper_motor_a: "stepper_motor_a"
     stepper_motor_b: "stepper_motor_b"
+    rack_and_pinion_left: "rack_and_pinion_left"
+    rack_and_pinion_right: "rack_and_pinion_right"
     talon_lift: ["talon_lift"]
     talon_scoop: "talon_scoop"
     scoop_servos: ["scoop_a", "scoop_b"]
@@ -86,3 +97,19 @@ science_controller:
     interface_name: position 
     command_interfaces: [position, velocity]
     state_interfaces: [position, velocity]
+
+# Laser GPIO Controller Configuration
+laser_gpio_controller:
+  ros__parameters:
+    gpios:
+      - spectrometry_laser
+    command_interfaces:
+      spectrometry_laser:
+        interfaces:
+          - laser_command
+    state_interfaces:
+      spectrometry_laser:
+        interfaces:
+          - laser_state
+          - temperature
+          - is_connected

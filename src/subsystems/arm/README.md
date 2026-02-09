@@ -65,9 +65,9 @@ Use *ip link* to check that there is a can0/vcan0.
 **Open another terminal, source the workspace, and call the service to set controllers:**
 ```bash
 source install/setup.bash
-ros2 service call /set_controller athena_arm_msgs/srv/SetController "{controller_names: [INCLUDE CONTROLLER(S) YOU WANT WITHIN BRACKETS]}"
+ros2 service call /set_controller msgs/srv/SetController "{controller_names: [INCLUDE CONTROLLER(S) YOU WANT WITHIN BRACKETS]}"
 ```
-Example: `ros2 service call /set_controller athena_arm_msgs/srv/SetController "{controller_names: [joint_trajectory_controller, arm_velocity_controller]}"`
+Example: `ros2 service call /set_controller msgs/srv/SetController "{controller_names: [joint_trajectory_controller, arm_velocity_controller]}"`
 
 ---
 

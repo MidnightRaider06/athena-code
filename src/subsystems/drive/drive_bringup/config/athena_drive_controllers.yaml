@@ -40,6 +40,14 @@ controller_manager:
 
     # swerve_drive_controller:
     #   type: drive_controllers/SwerveDriveController
+
+    # LED GPIO Controller
+    led_gpio_controller:
+      type: gpio_controllers/GpioCommandController
+
+    # Killswitch GPIO Controller
+    killswitch_gpio_controller:
+      type: gpio_controllers/GpioCommandController
     
 
 ackermann_steering_controller:
@@ -91,3 +99,37 @@ drive_position_controller:
       - steer_fl_joint
       - steer_fr_joint
     interface_name: position
+
+# LED GPIO Controller Configuration
+led_gpio_controller:
+  ros__parameters:
+    gpios:
+      - status_led
+    command_interfaces:
+      status_led:
+        interfaces:
+          - led_command
+    state_interfaces:
+      status_led:
+        interfaces:
+          - led_state
+          - is_connected
+
+# Killswitch GPIO Controller Configuration
+killswitch_gpio_controller:
+  ros__parameters:
+    gpios:
+      - drive_killswitch
+    command_interfaces:
+      drive_killswitch:
+        interfaces:
+          - kill_all
+          - kill_main
+          - kill_jetson
+    state_interfaces:
+      drive_killswitch:
+        interfaces:
+          - kill_all_sent
+          - kill_main_sent
+          - kill_jetson_sent
+          - is_connected

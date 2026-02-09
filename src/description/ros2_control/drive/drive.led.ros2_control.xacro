@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="led_ros2_control" params="name gpio_pin default_state:=off">
+
+    <ros2_control name="${name}" type="system">
+      <hardware>
+        <plugin>led_ros2_control/LEDHardwareInterface</plugin>
+        <param name="gpio_pin">${gpio_pin}</param>
+        <param name="default_state">${default_state}</param>
+      </hardware>
+
+      <gpio name="${name}">
+        <state_interface name="led_state"/>
+        <state_interface name="is_connected"/>
+        <command_interface name="led_command"/>
+      </gpio>
+
+    </ros2_control>
+
+  </xacro:macro>
+
+</robot>

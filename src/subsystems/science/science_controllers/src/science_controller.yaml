@@ -110,6 +110,22 @@ science_manual:
     description: "(Optional)"
     read_only: false
 
+  rack_and_pinion_left:
+    type: string
+    default_value: "rack_and_pinion_left"
+    description: "The Servo motor controller for the left-sided rack and pinion"
+    read_only: true
+    validation:
+      not_empty<>: null
+
+  rack_and_pinion_right:
+    type: string
+    default_value: "rack_and_pinion_right"
+    description: "The Servo motor controller for the right-sided rack and pinion"
+    read_only: true
+    validation:
+      not_empty<>: null
+
   auger:
     type: string
     default_value: "auger"

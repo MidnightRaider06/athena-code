@@ -51,6 +51,4 @@
     <!-- <xacro:odrive_ros2_control name="odrive"/> -->
   </xacro:unless>
 
-
-
 </robot>

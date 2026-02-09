@@ -233,6 +233,18 @@ def generate_launch_description():
             )
         ]
 
+    # GPIO controller spawners for LED and Killswitch
+    gpio_controller_names = ["led_gpio_controller", "killswitch_gpio_controller"]
+    gpio_controller_spawners = []
+    for controller in gpio_controller_names:
+        gpio_controller_spawners += [
+            Node(
+                package="controller_manager",
+                executable="spawner",
+                arguments=[controller, "-c", "/controller_manager"],
+            )
+        ]
+
     inactive_robot_controller_names = ["ackermann_steering_controller", "drive_velocity_controller", "drive_position_controller"]
     inactive_robot_controller_spawners = []
     for controller in inactive_robot_controller_names:
@@ -241,6 +253,22 @@ def generate_launch_description():
                 package="controller_manager",
                 executable="spawner",
                 arguments=[controller, "-c", "/controller_manager", "--inactive"],
+            )
+        ]
+
+    # Delay GPIO controller spawners after joint_state_broadcaster
+    delay_gpio_controller_spawners_after_joint_state_broadcaster_spawner = []
+    for i, controller in enumerate(gpio_controller_spawners):
+        delay_gpio_controller_spawners_after_joint_state_broadcaster_spawner += [
+            RegisterEventHandler(
+                event_handler=OnProcessExit(
+                    target_action=(
+                        gpio_controller_spawners[i - 1]
+                        if i > 0
+                        else joint_state_broadcaster_spawner
+                    ),
+                    on_exit=[controller],
+                )
             )
         ]
 
@@ -356,7 +384,7 @@ def generate_launch_description():
             robot_state_pub_node,
             joystick_publisher,
             teleop_twist_joy,
-            joint_state_publisher,
+            # joint_state_publisher,
             # delay_can_node_after_control_node,
             delay_joint_state_broadcaster_spawner_after_ros2_control_node,
             delay_rviz_after_joint_state_broadcaster_spawner,
@@ -364,4 +392,5 @@ def generate_launch_description():
         ]
         + delay_robot_controller_spawners_after_joint_state_broadcaster_spawner
         + delay_inactive_robot_controller_spawners_after_joint_state_broadcaster_spawner
+        + delay_gpio_controller_spawners_after_joint_state_broadcaster_spawner
     )

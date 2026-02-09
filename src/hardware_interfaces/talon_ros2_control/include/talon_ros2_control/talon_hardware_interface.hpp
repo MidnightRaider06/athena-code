@@ -1,21 +1,3 @@
-// Copyright (c) 2021, Stogl Robotics Consulting UG (haftungsbeschränkt)
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-//
-// Authors: Denis Stogl
-//
-
 #ifndef TALON_HARDWARE_INTERACE_HPP_
 #define TALON_HARDWARE_INTERACE_HPP_
 
@@ -54,8 +36,6 @@ public:
 
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
-  void enable_system_thread();
-
   // Lifecycle
   hardware_interface::CallbackReturn on_configure(
     const rclcpp_lifecycle::State & previous_state) override;
@@ -83,13 +63,24 @@ public:
   hardware_interface::return_type write(
     const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
+  // Helper Functions
+  void logger_function();
+  void enable_system_thread();
+
 private:
+  // Hardware Interface Parameters
+  int update_rate;
+  double elapsed_update_time; // Time since last hardware interface update
+  double elapsed_time; // Time since first hardware interface update
+  double elapsed_logger_time; // Time since last logger update
+  int logger_rate; // Logger update rate
+  int logger_state; // Logger on/off state
 
+  // Keeps track of amount of joints
   int num_joints;
-  
-  // EXPERIMENTING
-  std::vector<double> initial_position_;
 
+  // Maximum displacement for prismatic joints
+  std::vector<double> max_disp;
 
   // Store the state for the simulated robot
   std::vector<double> joint_state_position_;
@@ -99,8 +90,14 @@ private:
   std::vector<double> joint_command_position_;
   std::vector<double> joint_command_velocity_;
 
+  // Talon specific information
   std::vector<int> joint_node_ids;
+  std::string can_interface;
+  std::vector<TalonSRX*> talon_motors;
+  std::thread worker;
+  std::atomic<bool> is_running = false;
 
+  // Modes for control mode
   enum integration_level_t : std::uint8_t
   {
     UNDEFINED = 0,
@@ -111,9 +108,15 @@ private:
   // Active control mode
   std::vector<integration_level_t> control_level_;
 
-  std::vector<TalonSRX*> talon_motors;
-  std::thread worker;
-  std::atomic<bool> is_running = false;
+  // Types of joints
+  enum class joint_type_t : std::uint8_t
+  {
+    REVOLUTE = 0,
+    PRISMATIC = 1,
+  };
+
+  // Type of joint for each actuator
+  std::vector<joint_type_t> joint_type_;
 };
 
 }  // namespace talon_hardware_interface
