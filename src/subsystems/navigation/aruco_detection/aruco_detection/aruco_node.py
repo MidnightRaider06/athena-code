@@ -112,11 +112,10 @@ class ZedArUcoNode(Node):
             # Detection2D bbox is defined by center pose (Pose2D) + size_x/size_y in pixels
             message.bbox.center.position.x = (x_min + x_max) * 0.5
             message.bbox.center.position.x = (y_min + y_max) * 0.5
-            message.bbox.center.theta = 0.0  # axis-aligned bbox
+            message.bbox.center.theta = 0.0
             message.bbox.size_x = (x_max - x_min)
             message.bbox.size_y = (y_max - y_min)
-
-            # message.results can be left empty (CorrectionNode only needs bbox)
+            
             self.tag_pub.publish(message)
 
 
