@@ -58,7 +58,7 @@
   <xacro:ground_truth_odometry robot_base_frame="base_footprint"/>
  
   <xacro:depth_camera parent="base_footprint"> 
-      <origin xyz="0.0 0.0 0.1" rpy="0 0 0"/>
+      <origin xyz=".5 0.1 0.1" rpy="0 0 0"/>
   </xacro:depth_camera>
 
   <xacro:camera parent="base_footprint">

@@ -36,5 +36,6 @@ jobs:
       - name: Build workspace
         run: |
           source /opt/ros/humble/setup.bash
-          colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
+          colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release \
+            --packages-skip zed_components zed_debug zed_ros2 zed_wrapper obstacle_detection
         shell: bash

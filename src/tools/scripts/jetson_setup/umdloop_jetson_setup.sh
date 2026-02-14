@@ -41,7 +41,16 @@ install_ros2_humble() {
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
     apt-get update
-    apt-get install -y ros-humble-desktop ros-dev-tools
+    apt-get install -y ros-humble-desktop ros-dev-tools ros-humble-rmw-cyclonedds-cpp
+
+    if ! grep -qF 'source /opt/ros/humble/setup.bash' "$USER_HOME/.bashrc"; then
+        echo 'source /opt/ros/humble/setup.bash' >> "$USER_HOME/.bashrc"
+    fi
+    if ! grep -qF 'export RMW_IMPLEMENTATION=' "$USER_HOME/.bashrc"; then
+        echo 'export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp' >> "$USER_HOME/.bashrc"
+    fi
+
+    source "$USER_HOME/.bashrc"
 
     echo "[INFO] ROS2 Humble installed successfully"
 }
@@ -59,11 +68,10 @@ setup_athena_code() {
     cd "$ATHENA_REPO_DIR" || { echo "[ERROR] Failed to cd to $ATHENA_REPO_DIR"; exit 1; }
     bash dependencies.sh
 
-    echo "[INFO] Building athena-code workspace..."
-    
-    if ! grep -qxF 'source /opt/ros/humble/setup.bash' "$USER_HOME/.bashrc"; then
-        echo 'source /opt/ros/humble/setup.bash' >> "$USER_HOME/.bashrc"
+    if ! grep -qF "export CYCLONEDDS_URI=" "$USER_HOME/.bashrc"; then
+        echo "export CYCLONEDDS_URI=file://${ATHENA_REPO_DIR}/src/config/cyclonedds/config.xml" >> "$USER_HOME/.bashrc"
     fi
+    echo "[INFO] Building athena-code workspace..."
     
     source /opt/ros/humble/setup.bash
     colcon build --symlink-install

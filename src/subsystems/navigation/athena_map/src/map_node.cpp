@@ -209,9 +209,6 @@ private:
         if (costmap_ready_) {
             costmap_msg_.header.stamp = this->get_clock()->now();
             costmap_publisher_->publish(costmap_msg_);
-            RCLCPP_INFO(this->get_logger(), "Published costmap: %dx%d, resolution: %.2f, origin: (%.2f, %.2f)", 
-                        costmap_msg_.info.width, costmap_msg_.info.height, costmap_msg_.info.resolution,
-                        costmap_msg_.info.origin.position.x, costmap_msg_.info.origin.position.y);
         } else {
             RCLCPP_DEBUG(this->get_logger(), "Costmap not ready, skipping publish");
         }

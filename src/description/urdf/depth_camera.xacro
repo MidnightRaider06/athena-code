@@ -29,7 +29,7 @@
     </joint>
     
     <joint name="depth_camera_optical_joint" type="fixed">
-      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <parent link="depth_camera_link"/>
       <child link="depth_camera_optical_frame"/>
     </joint>
@@ -37,11 +37,12 @@
     <gazebo reference="depth_camera_link">
       <sensor name="depth_camera" type="depth">
         <always_on>1</always_on>
-        <update_rate>10</update_rate>
+        <update_rate>50</update_rate>
         <visualize>true</visualize>
         <topic>depth_camera</topic>
+        <ign_frame_id>depth_camera_optical_frame</ign_frame_id>
         <camera name="depth_camera">
-          <horizontal_fov>1.05</horizontal_fov>
+          <horizontal_fov>2.0944</horizontal_fov>
           <image>
             <width>640</width>
             <height>480</height>
@@ -49,7 +50,7 @@
           </image>
           <clip>
             <near>0.1</near>
-            <far>10.0</far>
+            <far>20.0</far>
           </clip>
           <depth_camera>
 	      	<output>points</output>

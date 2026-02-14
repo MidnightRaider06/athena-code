@@ -1,10 +1,10 @@
 [Unit]
-Description=CAN Interface Setup
+Description=UMD Loop CAN Interface Setup
 After=systemd-modules-load.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/can-setup.sh
+ExecStart=/usr/local/bin/umdloop_can_setup.sh
 ExecStop=/sbin/ip link set can0 down
 RemainAfterExit=yes
 

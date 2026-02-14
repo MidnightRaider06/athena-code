@@ -15,7 +15,9 @@ controller_manager:
 ackermann_steering_controller:
   ros__parameters:
     # Joint names
-    rear_wheels_names: ["propulsion_bl_joint", "propulsion_br_joint"]
+    # this looks like its backwards, but really rear wheel names is just meaning propoulsion joint and we want to get propulsion using the front rather than rear because its smoother in sim.
+    rear_wheels_names: ["propulsion_fl_joint", "propulsion_fr_joint"]
+
     front_wheels_names: ["steer_fl_joint", "steer_fr_joint"]
     
     # Vehicle dimensions

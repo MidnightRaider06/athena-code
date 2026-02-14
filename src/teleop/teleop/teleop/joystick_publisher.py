@@ -34,6 +34,16 @@ class JoystickPublisher(Node):
         self.joystick_type = self.get_parameter('joystick_type').value
         self.get_logger().info(f"Joystick type: {self.joystick_type}")
 
+        # Detect Jetson platform
+        self.is_jetson = False
+        try:
+            with open('/proc/device-tree/model', 'r') as f:
+                if 'Jetson' in f.read():
+                    self.is_jetson = True
+                    self.get_logger().info("Jetson platform detected - using axis remapping")
+        except:
+            pass
+
 
         joysticks = 0
         self.axis_data = None
@@ -141,10 +151,11 @@ class JoystickPublisher(Node):
                     joystick_vels[0] = 0
 
                 # Left stick: up and down
+                axis_1_multiplier = 1 if self.is_jetson else -1
                 if(self.axis_data.get(1) < -self.activation):
-                    joystick_vels[1] = -((self.axis_data[1] + self.activation) / (1 -self.activation))  # normalizes the 0.25 to 1 range to a 0 - 1 range and then mult by max vel
+                    joystick_vels[1] = axis_1_multiplier * ((self.axis_data[1] + self.activation) / (1 -self.activation))  # normalizes the 0.25 to 1 range to a 0 - 1 range and then mult by max vel
                 elif(self.axis_data.get(1) >self.activation):
-                    joystick_vels[1] = -((self.axis_data[1] - self.activation) / (1 -self.activation)) 
+                    joystick_vels[1] = axis_1_multiplier * ((self.axis_data[1] - self.activation) / (1 -self.activation)) 
                 else:
                     joystick_vels[1] = 0
 
@@ -157,10 +168,11 @@ class JoystickPublisher(Node):
                     joystick_vels[2] = 0
 
                 # Right stick: up and down
-                if(self.axis_data.get(4) < -self.activation):
-                    joystick_vels[3] = -((self.axis_data[4] + self.activation) / (1 -self.activation))  # normalizes the 0.25 to 1 range to a 0 - 1 range and then mult by max vel
-                elif(self.axis_data.get(4) > self.activation):
-                    joystick_vels[3] = -((self.axis_data[4] - self.activation) / (1 -self.activation)) 
+                axis_index = 5 if self.is_jetson else 4
+                if(self.axis_data.get(axis_index) < -self.activation):
+                    joystick_vels[3] = -((self.axis_data[axis_index] + self.activation) / (1 -self.activation))  # normalizes the 0.25 to 1 range to a 0 - 1 range and then mult by max vel
+                elif(self.axis_data.get(axis_index) > self.activation):
+                    joystick_vels[3] = -((self.axis_data[axis_index] - self.activation) / (1 -self.activation)) 
                 else:
                     joystick_vels[3] = 0
 
