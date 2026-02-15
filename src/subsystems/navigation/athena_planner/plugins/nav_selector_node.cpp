@@ -46,7 +46,7 @@ BT::NodeStatus NavSelector::tick()
 {
   callback_group_executor_.spin_some();
 
-  RCLCPP_INFO(node_->get_logger(), "Current nav_mode: '%s'", last_selected_nav_.c_str());
+  //RCLCPP_INFO(node_->get_logger(), "Current nav_mode: '%s'", last_selected_nav_.c_str());
 
   if (last_selected_nav_.empty()) {
     std::string default_nav_mode;

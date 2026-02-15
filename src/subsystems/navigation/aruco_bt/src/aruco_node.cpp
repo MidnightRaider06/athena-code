@@ -74,8 +74,6 @@ private:
 
             camera_info_received_ = true;
             RCLCPP_INFO(this->get_logger(), "Camera info received");
-            
-            // Unsubscribe after receiving camera info (it doesn't change)
             camera_info_sub_.reset();
         }
     }
@@ -182,49 +180,17 @@ private:
         // Convert rotation vector to rotation matrix, then to quaternion
         cv::Mat rotation_matrix;
         cv::Rodrigues(rvec_, rotation_matrix);
+        rotation_matrix.convertTo(rotation_matrix, CV_64F);
 
-        // Convert rotation matrix to quaternion
-        // Using the formula from rotation matrix to quaternion conversion
-        double trace = rotation_matrix.at<double>(0,0) + 
-                      rotation_matrix.at<double>(1,1) + 
-                      rotation_matrix.at<double>(2,2);
-        
-        double qw, qx, qy, qz;
-        
-        if (trace > 0) {
-            double s = 0.5 / sqrt(trace + 1.0);
-            qw = 0.25 / s;
-            qx = (rotation_matrix.at<double>(2,1) - rotation_matrix.at<double>(1,2)) * s;
-            qy = (rotation_matrix.at<double>(0,2) - rotation_matrix.at<double>(2,0)) * s;
-            qz = (rotation_matrix.at<double>(1,0) - rotation_matrix.at<double>(0,1)) * s;
-        } else {
-            if (rotation_matrix.at<double>(0,0) > rotation_matrix.at<double>(1,1) && 
-                rotation_matrix.at<double>(0,0) > rotation_matrix.at<double>(2,2)) {
-                double s = 2.0 * sqrt(1.0 + rotation_matrix.at<double>(0,0) - 
-                                     rotation_matrix.at<double>(1,1) - 
-                                     rotation_matrix.at<double>(2,2));
-                qw = (rotation_matrix.at<double>(2,1) - rotation_matrix.at<double>(1,2)) / s;
-                qx = 0.25 * s;
-                qy = (rotation_matrix.at<double>(0,1) + rotation_matrix.at<double>(1,0)) / s;
-                qz = (rotation_matrix.at<double>(0,2) + rotation_matrix.at<double>(2,0)) / s;
-            } else if (rotation_matrix.at<double>(1,1) > rotation_matrix.at<double>(2,2)) {
-                double s = 2.0 * sqrt(1.0 + rotation_matrix.at<double>(1,1) - 
-                                     rotation_matrix.at<double>(0,0) - 
-                                     rotation_matrix.at<double>(2,2));
-                qw = (rotation_matrix.at<double>(0,2) - rotation_matrix.at<double>(2,0)) / s;
-                qx = (rotation_matrix.at<double>(0,1) + rotation_matrix.at<double>(1,0)) / s;
-                qy = 0.25 * s;
-                qz = (rotation_matrix.at<double>(1,2) + rotation_matrix.at<double>(2,1)) / s;
-            } else {
-                double s = 2.0 * sqrt(1.0 + rotation_matrix.at<double>(2,2) - 
-                                     rotation_matrix.at<double>(0,0) - 
-                                     rotation_matrix.at<double>(1,1));
-                qw = (rotation_matrix.at<double>(1,0) - rotation_matrix.at<double>(0,1)) / s;
-                qx = (rotation_matrix.at<double>(0,2) + rotation_matrix.at<double>(2,0)) / s;
-                qy = (rotation_matrix.at<double>(1,2) + rotation_matrix.at<double>(2,1)) / s;
-                qz = 0.25 * s;
-            }
-        }
+        // Convert rotation matrix to quaternion (tf2)
+        tf2::Matrix3x3 m(
+          rotation_matrix.at<double>(0,0), rotation_matrix.at<double>(0,1), rotation_matrix.at<double>(0,2),
+          rotation_matrix.at<double>(1,0), rotation_matrix.at<double>(1,1), rotation_matrix.at<double>(1,2),
+          rotation_matrix.at<double>(2,0), rotation_matrix.at<double>(2,1), rotation_matrix.at<double>(2,2)
+        );
+        tf2::Quaternion q;
+        m.getRotation(q);
+        q.normalize();
 
         // Create PoseStamped in camera frame
         geometry_msgs::msg::PoseStamped pose_camera;
@@ -237,10 +203,11 @@ private:
         pose_camera.pose.position.z = tvec_[2];
 
         // Orientation (quaternion)
-        pose_camera.pose.orientation.x = qx;
-        pose_camera.pose.orientation.y = qy;
-        pose_camera.pose.orientation.z = qz;
-        pose_camera.pose.orientation.w = qw;
+        pose_camera.pose.orientation.x = q.x();
+        pose_camera.pose.orientation.y = q.y();
+        pose_camera.pose.orientation.z = q.z();
+        pose_camera.pose.orientation.w = q.w();
+
 
         // Transform to map frame
         try {

@@ -99,7 +99,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([aruco_launch]),
         launch_arguments=[
         ('sim', LaunchConfiguration('use_sim_time')),
-        ('marker_size', '0.2')
+        ('marker_size', '0.5')
         ]
     )
 
