@@ -10,9 +10,12 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(behaviortree_cpp_v3 REQUIRED)
 find_package(nav2_util REQUIRED)  
+find_package(geometry_msgs REQUIRED)
 
 add_library(bt_nodes SHARED
   plugins/nav_selector_node.cpp
+  plugins/aruco_detected_node.cpp
+  plugins/get_aruco_pose_node.cpp
 )
 
 target_compile_definitions(bt_nodes PRIVATE BT_PLUGIN_EXPORT)
@@ -28,6 +31,7 @@ ament_target_dependencies(bt_nodes
   std_msgs
   behaviortree_cpp_v3
   nav2_util  
+  geometry_msgs
 )
 
 install(TARGETS bt_nodes

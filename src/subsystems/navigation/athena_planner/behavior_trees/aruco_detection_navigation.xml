@@ -1,7 +1,47 @@
 <root>
   <BehaviorTree ID="ArucoDetectionNavigation">
-    <ForceSuccess>
-      <Wait wait_duration="0.01"/>
-    </ForceSuccess>
+    <RecoveryNode number_of_retries="1" name="NavigateWithAruco">
+      <PipelineSequence name="MainSequence">
+        
+        <!-- Continuously check for ArUco and navigate to it when detected -->
+        <ReactiveFallback name="ArucoOrSearch">
+          
+          <!-- Branch 1: ArUco Detection and Navigation -->
+          <Sequence name="NavigateToAruco">
+            
+            <!-- Check if ArUco marker is detected -->
+            <ArUcoDetected aruco_topic="/aruco_pose" timeout="0.5" />
+            
+            <!-- Get the ArUco pose from the topic -->
+            <GetArucoPose aruco_topic="/aruco_pose" aruco_pose="{aruco_pose}" />
+            
+            <!-- Navigate to the ArUco marker -->
+            <Sequence name="GoToArucoPose">
+              <ComputePathToPose goal="{aruco_pose}" path="{path}" planner_id="GridBased"/>
+              <FollowPath path="{path}" controller_id="FollowPath"/>
+            </Sequence>
+            
+          </Sequence>
+          
+          <!-- Branch 2: Search Pattern - Spiral outward from current position -->
+          <Sequence name="SearchPattern">
+            
+            <!-- For now, use a simple goal-based search -->
+            <!-- You can replace this with a proper coverage planner later -->
+            <Spin spin_dist="6.28"/>  <!-- Full rotation to scan for ArUco -->
+            
+          </Sequence>
+          
+        </ReactiveFallback>
+        
+      </PipelineSequence>
+      
+      <!-- Recovery: If navigation fails, clear costmap and retry -->
+      <Sequence name="Recovery">
+        <ClearEntireCostmap name="ClearGlobalCostmap" service_name="global_costmap/clear_entirely_global_costmap"/>
+        <ClearEntireCostmap name="ClearLocalCostmap" service_name="local_costmap/clear_entirely_local_costmap"/>
+      </Sequence>
+      
+    </RecoveryNode>
   </BehaviorTree>
 </root>
