@@ -7,6 +7,7 @@
 #include "athena_planner/nav_selector_node.hpp"
 #include "athena_planner/aruco_detected_node.hpp"
 #include "athena_planner/get_aruco_pose_node.hpp"
+#include "athena_planner/spiral_coverage_action_node.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 
@@ -77,4 +78,5 @@ BT_REGISTER_NODES(factory)
   factory.registerNodeType<bt_nodes::NavSelector>("NavSelector");
   factory.registerNodeType<bt_nodes::ArUcoDetected>("ArUcoDetected");
   factory.registerNodeType<bt_nodes::GetArucoPose>("GetArucoPose");
+  factory.registerNodeType<bt_nodes::SpiralCoverageAction>("SpiralCoverageAction");
 }

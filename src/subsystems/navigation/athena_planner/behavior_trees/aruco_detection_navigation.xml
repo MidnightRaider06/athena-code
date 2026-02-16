@@ -2,13 +2,50 @@
   <BehaviorTree ID="ArucoDetectionNavigation">
     <ReactiveFallback>
       <Sequence>
-        <ArUcoDetected aruco_topic="/aruco_pose" timeout="0.5" />
+        <ArUcoDetected aruco_topic="/aruco_pose" timeout="1.0" />
         <GetArucoPose aruco_topic="/aruco_pose" aruco_pose="{aruco_pose}" />
-        <ComputePathToPose goal="{aruco_pose}" path="{path}" planner_id="GridBased"/>
-        <FollowPath path="{path}" controller_id="FollowPath"/>
-        <!-- <SubTree ID="GNSSNavigation" goal="{aruco_pose}" path="{path}" __shared_blackboard="true"/> -->
+
+        <RecoveryNode number_of_retries="3" name="NavWithRecovery">
+          <!-- Primary attempt -->
+          <PipelineSequence name="PlanAndFollow">
+            <RateController hz="1.0">
+              <ComputePathToPose goal="{aruco_pose}" path="{path}" planner_id="GridBased"/>
+            </RateController>
+            <FollowPath path="{path}" controller_id="FollowPath"/>
+          </PipelineSequence>
+
+          <!-- Recovery behavior (runs after each failure, then retries) -->
+          <ReactiveFallback name="RecoveryActions">
+            <Sequence>
+              <ClearEntireCostmap name="clear_local_costmap" service_name="/local_costmap/clear_entirely_local_costmap"/>
+              <Wait wait_duration="0.2" />
+            </Sequence>
+          </ReactiveFallback>
+        </RecoveryNode> 
       </Sequence>
-      <Wait wait_duration="0.2"/>
+
+      <!-- ArUco NOT detected - execute spiral coverage search -->
+      <Sequence name="SpiralSearchCoverage">
+        <!-- Generate Archimedean spiral path for systematic coverage -->
+        <SpiralCoverageAction 
+          radius="15.0"
+          spacing="2.0"
+          angular_step="0.1"
+          frame_id="map"
+          path="{spiral_path}" />
+        
+        <!-- Follow the spiral path with reactive ArUco checking -->
+        <ReactiveFallback name="FollowSpiralReactively">
+          <!-- Check if ArUco detected during spiral navigation -->
+          <Sequence name="ArucoDetectedDuringSpiral">
+            <ArUcoDetected aruco_topic="/aruco_pose" timeout="0.1" />
+            <AlwaysSuccess />
+          </Sequence>
+          
+          <!-- Continue following spiral if ArUco not detected -->
+          <FollowPath path="{spiral_path}" controller_id="FollowPath"/>
+        </ReactiveFallback>
+      </Sequence>
     </ReactiveFallback>
   </BehaviorTree>
 </root>
