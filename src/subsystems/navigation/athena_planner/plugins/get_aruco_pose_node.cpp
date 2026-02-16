@@ -31,7 +31,7 @@ GetArucoPose::GetArucoPose(
 
 BT::NodeStatus GetArucoPose::tick()
 {
-  RCLCPP_INFO(node_->get_logger(), "GetArucoPose::tick() called");
+  RCLCPP_DEBUG(node_->get_logger(), "GetArucoPose::tick() called");
   
   // Spin to process callbacks
   callback_group_executor_.spin_some();
