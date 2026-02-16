@@ -203,16 +203,26 @@ private:
         pose_camera.pose.position.z = tvec_[2];
 
         // Orientation (quaternion)
-        pose_camera.pose.orientation.x = q.x();
-        pose_camera.pose.orientation.y = q.y();
-        pose_camera.pose.orientation.z = q.z();
-        pose_camera.pose.orientation.w = q.w();
+        pose_camera.pose.orientation.x = 0.0;
+        pose_camera.pose.orientation.y = 0.0;
+        pose_camera.pose.orientation.z = 0.0;
+        pose_camera.pose.orientation.w = 1.0;
 
 
         // Transform to map frame
         try {
             geometry_msgs::msg::PoseStamped pose_map;
             tf_buffer_->transform(pose_camera, pose_map, "map", tf2::durationFromSec(0.1));
+
+            geometry_msgs::msg::TransformStamped tf_map_base =
+            tf_buffer_->lookupTransform("map", "base_footprint", msg->header.stamp, tf2::durationFromSec(0.1));
+            
+            // Overwrite goal orientation with rover's current orientation
+            pose_map.pose.orientation.x = tf_map_base.transform.rotation.x;
+            pose_map.pose.orientation.y = tf_map_base.transform.rotation.y;
+            pose_map.pose.orientation.z = tf_map_base.transform.rotation.z;
+            pose_map.pose.orientation.w = tf_map_base.transform.rotation.w;
+
             pose_pub_->publish(pose_map);
         } catch (tf2::TransformException& ex) {
             RCLCPP_WARN(this->get_logger(), "Could not transform to map frame: %s", ex.what());
