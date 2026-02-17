@@ -34,7 +34,7 @@ public:
         "Topic name for ArUco pose messages"),
       BT::InputPort<double>(
         "timeout",
-        0.5,
+        1.0,
         "Time in seconds to consider ArUco detection valid")
     };
   }
@@ -54,7 +54,6 @@ private:
   double timeout_;
   
   rclcpp::Time last_detection_time_;
-  bool ever_detected_;
 };
 
 }  // namespace bt_nodes

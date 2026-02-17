@@ -16,8 +16,12 @@ GetArucoPose::GetArucoPose(
     rclcpp::CallbackGroupType::MutuallyExclusive,
     false);
   callback_group_executor_.add_callback_group(callback_group_, node_->get_node_base_interface());
-
+  
+  timeout_ = 1.5;
   getInput("aruco_topic", topic_name_);
+  getInput("timeout", timeout_);
+
+  last_pose_stamp_ = rclcpp::Time(0, 0, node_->get_clock()->get_clock_type());
 
   rclcpp::SubscriptionOptions sub_option;
   sub_option.callback_group = callback_group_;
@@ -41,6 +45,17 @@ BT::NodeStatus GetArucoPose::tick()
     return BT::NodeStatus::FAILURE;
   }
 
+  // Reject stale poses so we don't reuse an old ArUco goal
+  auto current_time = node_->now();
+  double time_since_detection = (current_time - last_pose_stamp_).seconds();
+
+  if (time_since_detection > timeout_) {
+    RCLCPP_WARN(node_->get_logger(),
+      "ArUco pose stale (%.2fs > %.2fs), ignoring", time_since_detection, timeout_);
+    has_pose_ = false;
+    return BT::NodeStatus::FAILURE;
+  }
+
   // Output the latest pose to the blackboard
   setOutput("aruco_pose", latest_pose_);
 
@@ -57,6 +72,7 @@ void GetArucoPose::arucoCallback(
   const geometry_msgs::msg::PoseStamped::SharedPtr msg)
 {
   latest_pose_ = *msg;
+  last_pose_stamp_ = rclcpp::Time(msg->header.stamp);
   has_pose_ = true;
 }
 

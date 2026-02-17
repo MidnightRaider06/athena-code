@@ -8,6 +8,8 @@
 #include "nav_msgs/msg/path.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "nav2_util/robot_utils.hpp"
+#include "tf2_ros/buffer.h"
 
 namespace bt_nodes
 {
@@ -22,13 +24,13 @@ namespace bt_nodes
  * Input Ports:
  *   radius         [double] Maximum radius of the spiral in meters (default: 15.0)
  *   spacing        [double] Distance between spiral loops in meters (default: 2.0)
- *   angular_step   [double] Angular resolution in radians (default: 0.1)
+ *   angular_step   [double] Angular resolution in radians (default: 1.0)
  *   frame_id       [string] Reference frame for the path (default: "map")
  * 
  * Output Ports:
  *   path           [nav_msgs::msg::Path] The generated spiral coverage path
  */
-class SpiralCoverageAction : public BT::SyncActionNode
+class SpiralCoverageAction : public BT::StatefulActionNode
 {
 public:
 
@@ -37,7 +39,9 @@ public:
     const BT::NodeConfiguration & conf);
 
   static BT::PortsList providedPorts();
-  BT::NodeStatus tick() override;
+  BT::NodeStatus onStart() override;
+  BT::NodeStatus onRunning() override;
+  void onHalted() override;
 
 private:
 
@@ -45,9 +49,14 @@ private:
     double radius,
     double spacing,
     double angular_step,
-    const std::string & frame_id);
+    const std::string & frame_id,
+    const geometry_msgs::msg::PoseStamped& current_pose);
 
   double calculateTangentAngle(double theta);
+
+  bool path_generated_;
+  nav_msgs::msg::Path cached_path_;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
 };
 
 }

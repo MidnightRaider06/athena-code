@@ -31,6 +31,10 @@ public:
         "aruco_topic",
         "/aruco_pose",
         "Topic name for ArUco pose messages"),
+      BT::InputPort<std::string>(
+        "timeout",
+        "1.5",
+        "Time in seconds to consider ArUco detection valid"),
       BT::OutputPort<geometry_msgs::msg::PoseStamped>(
         "aruco_pose",
         "The retrieved ArUco marker pose")
@@ -49,9 +53,12 @@ private:
   rclcpp::executors::SingleThreadedExecutor callback_group_executor_;
 
   std::string topic_name_;
+  double timeout_;
+  rclcpp::Time last_pose_stamp_;
   
   geometry_msgs::msg::PoseStamped latest_pose_;
   bool has_pose_;
+
 };
 
 }  // namespace bt_nodes

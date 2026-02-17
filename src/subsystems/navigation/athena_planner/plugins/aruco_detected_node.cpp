@@ -8,15 +8,15 @@ using std::placeholders::_1;
 ArUcoDetected::ArUcoDetected(
   const std::string & name,
   const BT::NodeConfiguration & conf)
-: BT::ConditionNode(name, conf),
-  ever_detected_(false)
+: BT::ConditionNode(name, conf)
 {
   node_ = config().blackboard->get<rclcpp::Node::SharedPtr>("node");
   callback_group_ = node_->create_callback_group(
     rclcpp::CallbackGroupType::MutuallyExclusive,
     false);
   callback_group_executor_.add_callback_group(callback_group_, node_->get_node_base_interface());
-
+  
+  timeout_ = 1.0; // default detection timeout
   getInput("aruco_topic", topic_name_);
   getInput("timeout", timeout_);
 
@@ -29,7 +29,7 @@ ArUcoDetected::ArUcoDetected(
     std::bind(&ArUcoDetected::arucoCallback, this, _1),
     sub_option);
 
-  last_detection_time_ = node_->now();
+  last_detection_time_ = rclcpp::Time(0, 0, node_->get_clock()->get_clock_type());
 }
 
 BT::NodeStatus ArUcoDetected::tick()
@@ -39,7 +39,7 @@ BT::NodeStatus ArUcoDetected::tick()
   // Spin to process callbacks
   callback_group_executor_.spin_some();
 
-  if (!ever_detected_) {
+  if (last_detection_time_.nanoseconds() == 0) {
     RCLCPP_DEBUG(node_->get_logger(), "ArUco never detected");
     return BT::NodeStatus::FAILURE;
   }
@@ -61,8 +61,7 @@ void ArUcoDetected::arucoCallback(
   const geometry_msgs::msg::PoseStamped::SharedPtr msg)
 {
   (void)msg;  // Mark as used
-  last_detection_time_ = node_->now();
-  ever_detected_ = true;
+  last_detection_time_ = rclcpp::Time(msg->header.stamp);
 }
 
 }  // namespace bt_nodes
