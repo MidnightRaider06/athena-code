@@ -60,10 +60,6 @@
     <origin xyz=".5 0.1 0.1" rpy="0 0 0"/>
   </xacro:zed_camera_sensor>
 
-  <xacro:camera parent="base_footprint">
-    <origin xyz="0.0 0.0 0.15" rpy="0 0 0"/>
-  </xacro:camera>
-
   <xacro:if value="$(arg use_mock_hardware)">
     <xacro:athena_drive_ros2_control
     name="athena_drive"
