@@ -99,6 +99,40 @@ hardware_interface::CallbackReturn TALONHardwareInterface::on_init(
       RCLCPP_ERROR(rclcpp::get_logger("TALONHardwareInterface"), "Invalid joint_type parameter for joint %s. Must be 'revolute' or 'prismatic'. If prismatic, it must have a 'max_disp' parameter.", joint.name.c_str());
       return hardware_interface::CallbackReturn::ERROR;
     }
+
+    // Build per-joint motor config (uses MotorConfig defaults if param not specified)
+    MotorConfig mc;
+    if (joint.parameters.count("encoder_resolution")) {
+      mc.encoder_resolution = std::stod(joint.parameters.at("encoder_resolution"));
+    }
+    if (joint.parameters.count("gear_ratio")) {
+      mc.gear_ratio = std::abs(std::stod(joint.parameters.at("gear_ratio")));
+    }
+    if (joint.parameters.count("distance_per_rev")) {
+      mc.distance_per_rev = std::stod(joint.parameters.at("distance_per_rev"));
+    }
+    if (joint.parameters.count("inverted")) {
+      mc.inverted = (joint.parameters.at("inverted") == "true");
+    }
+    if (joint.parameters.count("sensor_phase")) {
+      mc.sensor_phase = (joint.parameters.at("sensor_phase") == "true");
+    }
+    if (joint.parameters.count("kP")) {
+      mc.kP = std::stod(joint.parameters.at("kP"));
+    }
+    if (joint.parameters.count("kI")) {
+      mc.kI = std::stod(joint.parameters.at("kI"));
+    }
+    if (joint.parameters.count("kD")) {
+      mc.kD = std::stod(joint.parameters.at("kD"));
+    }
+    if (joint.parameters.count("kF")) {
+      mc.kF = std::stod(joint.parameters.at("kF"));
+    }
+    if (joint.parameters.count("config_timeout_ms")) {
+      mc.config_timeout_ms = std::stoi(joint.parameters.at("config_timeout_ms"));
+    }
+    motor_configs_.push_back(mc);
   }
 
   num_joints = static_cast<int>(info_.joints.size());
@@ -161,8 +195,10 @@ hardware_interface::CallbackReturn TALONHardwareInterface::on_configure(
     for(int i = 0; i < num_joints; i++){
       TalonSRX *motor = new TalonSRX(joint_node_ids[i], can_interface);
       talon_motors.push_back(motor);
-      RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), "talon_motor initialized.");
-      initMotor(motor);
+      RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"),
+        "talon_motor initialized (node_id=%d, encoder_res=%.1f, gear_ratio=%.2f).",
+        joint_node_ids[i], motor_configs_[i].encoder_resolution, motor_configs_[i].gear_ratio);
+      initMotor(motor, motor_configs_[i], can_interface);
     }
 
     RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), "Configure complete.");
@@ -214,7 +250,7 @@ hardware_interface::CallbackReturn TALONHardwareInterface::on_deactivate(
   RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), "Deactivating ...please wait...");
 
   for(int i = 0; i < num_joints; i++){
-    setVelocityFromLinearVelocity(talon_motors[i], 0.0, 50);
+    stopMotor(talon_motors[i], 50);
   }
 
   is_running.store(false);
@@ -233,8 +269,13 @@ hardware_interface::return_type TALONHardwareInterface::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
   for(int i = 0; i < num_joints; i++){
-    joint_state_position_[i] = getPositionDistance(talon_motors[i]); // meters
-    joint_state_velocity_[i] = getClawVelocity(talon_motors[i]); // m/s
+    if (joint_type_[i] == joint_type_t::PRISMATIC) {
+      joint_state_position_[i] = getPositionDistance(talon_motors[i], motor_configs_[i]);   // meters
+      joint_state_velocity_[i] = getLinearVelocity(talon_motors[i], motor_configs_[i]);     // m/s
+    } else {
+      joint_state_position_[i] = getPositionRadians(talon_motors[i], motor_configs_[i]);    // radians
+      joint_state_velocity_[i] = getAngularVelocity(talon_motors[i], motor_configs_[i]);    // rad/s
+    }
   }
   return hardware_interface::return_type::OK;
 }
@@ -244,9 +285,6 @@ hardware_interface::return_type talon_ros2_control::TALONHardwareInterface::writ
 {
   elapsed_update_time+=period.seconds();
   double update_period = 1.0/update_rate;
-  int32_t joint_angle = 0;
-  int32_t joint_velocity = 0;
-
   elapsed_time+=period.seconds();
   
   // Logger update
@@ -272,22 +310,22 @@ hardware_interface::return_type talon_ros2_control::TALONHardwareInterface::writ
         // TO DO: implement joint limits so i dont gotta do this
         joint_command_position_[i] = std::clamp(joint_command_position_[i], 0.0, max_disp[i]);
         // COMMAND PRISMATIC POSITION
-        setPositionFromDisplacement(talon_motors[i], joint_command_position_[i], 50);
+        setPositionFromDisplacement(talon_motors[i], joint_command_position_[i], 50, motor_configs_[i]);
 
       } else if(control_level_[i] == integration_level_t::VELOCITY && joint_type_[i] == joint_type_t::PRISMATIC && std::isfinite(joint_command_velocity_[i])) {
 
         // COMMAND PRISMATIC VELOCITY
-        setVelocityFromLinearVelocity(talon_motors[i], joint_command_velocity_[i], 50);
+        setVelocityFromLinearVelocity(talon_motors[i], joint_command_velocity_[i], 50, motor_configs_[i]);
 
       } else if(control_level_[i] == integration_level_t::POSITION && joint_type_[i] == joint_type_t::REVOLUTE && std::isfinite(joint_command_position_[i])) {
 
         // COMMAND REVOLUTE POSITION
-        setPositionFromJointCommand(talon_motors[i], joint_command_position_[i], 50);
+        setPositionFromJointCommand(talon_motors[i], joint_command_position_[i], 50, motor_configs_[i]);
 
       } else if(control_level_[i] == integration_level_t::VELOCITY && joint_type_[i] == joint_type_t::REVOLUTE && std::isfinite(joint_command_velocity_[i])) {
 
         // COMMAND REVOLUTE VELOCITY
-        setVelocityFromAngularVelocity(talon_motors[i], joint_command_velocity_[i], 50);
+        setVelocityFromAngularVelocity(talon_motors[i], joint_command_velocity_[i], 50, motor_configs_[i]);
 
       }
       else {

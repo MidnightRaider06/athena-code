@@ -101,6 +101,10 @@ private:
   std::vector<double> encoder_position;
   std::vector<double> motor_velocity;
   std::vector<double> motor_position;
+
+  // Telemetry data from CAN responses
+  std::vector<double> motor_temperature_;    // Motor temperature in °C
+  std::vector<double> motor_torque_current_; // Motor torque current in A
     
   // Velocity at which **joint** rotates to reach position in 1 dps
   uint16_t operating_velocity;

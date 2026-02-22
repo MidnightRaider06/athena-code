@@ -1,0 +1,11 @@
+[Unit]
+Description=UMD Loop Static IP Configuration
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ip addr add 192.168.1.12/24 dev enP8p1s0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

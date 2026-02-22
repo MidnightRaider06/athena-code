@@ -16,21 +16,22 @@
 
 #include <string>
 #include "parameter_traits/parameter_traits.hpp"
+#include "tl_expected/expected.hpp"
 
 #include "rclcpp/rclcpp.hpp" 
 
 namespace parameter_traits 
 {
-inline parameter_traits::Result forbidden_interface_name_prefix(rclcpp::Parameter const & parameter)
+inline tl::expected<void, std::string> forbidden_interface_name_prefix(rclcpp::Parameter const & parameter)
 {
   auto const & interface_name = parameter.as_string();
 
   if (interface_name.rfind("blup_", 0) == 0)
   {
-    return parameter_traits::ERROR("'interface_name' parameter can not start with 'blup_'");
+    return tl::unexpected(std::string("'interface_name' parameter can not start with 'blup_'"));
   }
 
-  return parameter_traits::OK;
+  return {};
 }
 
 }  // namespace parameter_traits

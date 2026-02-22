@@ -26,12 +26,12 @@
 #include <vector>
 
 #include "controller_interface/controller_interface.hpp"
-#include "manual_arm_cylindrical_controller_parameters.hpp"
+#include <arm_controllers/manual_arm_cylindrical_controller_parameters.hpp>
 #include "athena_arm_controllers/visibility_control.h"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
-#include "realtime_tools/realtime_buffer.h"
-#include "realtime_tools/realtime_publisher.h"
+#include "realtime_tools/realtime_buffer.hpp"
+#include "realtime_tools/realtime_publisher.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 
 // TODO(anyone): Replace with controller specific messages

@@ -259,7 +259,6 @@ controller_interface::return_type SwerveDriveController::update(
   double linear_y = (*current_ref)->linear.y;
   double angular_z = (*current_ref)->angular.z;
   double track_width = params_.track_width;
-  double wheelbase = params_.wheelbase;
   double wheel_radius = params_.wheel_radius;
 
   // Calculations credit: https://github.com/RoboEagles4828/ros2-swerve-controller/tree/main

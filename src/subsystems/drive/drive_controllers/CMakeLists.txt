@@ -9,12 +9,15 @@ endif()
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   control_msgs
   controller_interface
+  geometry_msgs
   hardware_interface
+  nav_msgs
   pluginlib
   rclcpp
   rclcpp_lifecycle
   realtime_tools
   std_srvs
+  tf2_msgs
 )
 
 find_package(ament_cmake REQUIRED)

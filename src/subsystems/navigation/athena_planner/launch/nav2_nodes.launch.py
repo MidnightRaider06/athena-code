@@ -2,7 +2,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
-from launch_ros.actions import Node, SetParameter
+from launch_ros.actions import Node
 
 
 
@@ -80,8 +80,8 @@ def generate_launch_description():
    ld.add_action(declare_log_level_cmd)
 
 
-   ld.add_action(SetParameter('use_sim_time', use_sim_time))
 
+   sim_time_param = {'use_sim_time': use_sim_time}
 
    ld.add_action(
        Node(
@@ -90,7 +90,7 @@ def generate_launch_description():
                output='screen',
                respawn=use_respawn,
                respawn_delay=2.0,
-               parameters=[params_file],
+               parameters=[params_file, sim_time_param],
                arguments=['--ros-args', '--log-level', log_level],
                remappings=remappings + [('cmd_vel', 'cmd_vel_nav')],
        )
@@ -105,7 +105,7 @@ def generate_launch_description():
                output='screen',
                respawn=use_respawn,
                respawn_delay=2.0,
-               parameters=[params_file],
+               parameters=[params_file, sim_time_param],
                arguments=['--ros-args', '--log-level', log_level],
                remappings=remappings,
        )
@@ -120,7 +120,7 @@ def generate_launch_description():
                output='screen',
                respawn=use_respawn,
                respawn_delay=2.0,
-               parameters=[params_file],
+               parameters=[params_file, sim_time_param],
                arguments=['--ros-args', '--log-level', log_level],
                remappings=remappings,
        )
@@ -135,7 +135,7 @@ def generate_launch_description():
                output='screen',
                respawn=use_respawn,
                respawn_delay=2.0,
-               parameters=[params_file],
+               parameters=[params_file, sim_time_param],
                arguments=['--ros-args', '--log-level', log_level],
                remappings=remappings + [('cmd_vel', 'cmd_vel_nav')],
        )
@@ -153,6 +153,7 @@ def generate_launch_description():
                parameters=[
                    params_file,
                    {'default_nav_to_pose_bt_xml': default_bt_xml_path},
+                   sim_time_param,
                ],
                arguments=['--ros-args', '--log-level', log_level],
                cwd=bt_dir,
@@ -169,7 +170,7 @@ def generate_launch_description():
                output='screen',
                respawn=use_respawn,
                respawn_delay=2.0,
-               parameters=[params_file],
+               parameters=[params_file, sim_time_param],
                arguments=['--ros-args', '--log-level', log_level],
                remappings=remappings,
        )
@@ -184,7 +185,7 @@ def generate_launch_description():
                output='screen',
                respawn=use_respawn,
                respawn_delay=2.0,
-               parameters=[params_file],
+               parameters=[params_file, sim_time_param],
                arguments=['--ros-args', '--log-level', log_level],
                remappings=remappings + [('cmd_vel', 'cmd_vel_nav')],
        )
@@ -198,7 +199,7 @@ def generate_launch_description():
                name='lifecycle_manager_navigation',
                output='screen',
                arguments=['--ros-args', '--log-level', log_level],
-               parameters=[{'autostart': autostart}, {'node_names': lifecycle_nodes}],
+               parameters=[{'autostart': autostart}, {'node_names': lifecycle_nodes}, sim_time_param],
        )
    )
 

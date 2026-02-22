@@ -1,0 +1,19 @@
+motor_status_broadcaster:
+  joints: {
+    type: string_array,
+    default_value: [],
+    description: "Names of the joints to monitor for motor telemetry."
+  }
+  interfaces: {
+    type: string_array,
+    default_value: ["motor_temperature", "torque_current"],
+    description: "State interface names to read from each joint."
+  }
+  publish_rate: {
+    type: double,
+    default_value: 10.0,
+    description: "Rate (Hz) at which to publish diagnostics. Set to 0 to publish every update cycle.",
+    validation: {
+      gt_eq<>: [0.0]
+    }
+  }

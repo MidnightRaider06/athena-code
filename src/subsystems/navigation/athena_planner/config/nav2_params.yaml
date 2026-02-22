@@ -1,6 +1,6 @@
 bt_navigator:
   ros__parameters:
-    use_sim_time: true
+    use_sim_time: false
     global_frame: map
     robot_base_frame: base_footprint
     odom_topic: /localization/odom
@@ -43,7 +43,7 @@ bt_navigator:
 
 planner_server:
   ros__parameters:
-    use_sim_time: true
+    use_sim_time: false
     expected_planner_frequency: 1.0
     planner_plugins: ["GridBased"]
 
@@ -73,7 +73,7 @@ planner_server:
 
 controller_server:
   ros__parameters:
-    use_sim_time: true
+    use_sim_time: false
     controller_frequency: 20.0
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.5
@@ -124,7 +124,7 @@ controller_server:
 
 behavior_server:
   ros__parameters:
-    use_sim_time: true
+    use_sim_time: false
     global_frame: map
     robot_base_frame: base_footprint
     transform_tolerance: 0.5
@@ -148,14 +148,14 @@ behavior_server:
 global_costmap:
   global_costmap:
     ros__parameters:
-      use_sim_time: true
+      use_sim_time: false
       robot_base_frame: base_footprint
       global_frame: map
       update_frequency: 5.0
       publish_frequency: 2.0
       resolution: 0.1
-      width: 800
-      height: 800
+      width: 100
+      height: 100
       rolling_window: true
       track_unknown_space: false
       always_send_full_costmap: true
@@ -170,7 +170,7 @@ global_costmap:
         observation_sources: obstacles
         obstacles:
           data_type: "PointCloud2"
-          topic: "/depth_camera/points_corrected"
+          topic: "/zed/zed_node/point_cloud/cloud_registered_corrected"
           marking: true
           clearing: true
           min_obstacle_height: 0.0
@@ -187,7 +187,7 @@ global_costmap:
 local_costmap:
   local_costmap:
     ros__parameters:
-      use_sim_time: true
+      use_sim_time: false
       global_frame: map
       robot_base_frame: base_footprint
       update_frequency: 10.0
@@ -216,7 +216,7 @@ local_costmap:
         observation_sources: obstacles
         obstacles:
           data_type: "PointCloud2"
-          topic: "/depth_camera/points_corrected"
+          topic: "/zed/zed_node/point_cloud/cloud_registered_corrected"
           marking: true
           clearing: true
           min_obstacle_height: 0.0
@@ -232,7 +232,7 @@ local_costmap:
 
 lifecycle_manager:
   ros__parameters:
-    use_sim_time: true
+    use_sim_time: false
     autostart: true
     node_names:
       - controller_server

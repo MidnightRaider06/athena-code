@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(umdloop_can_library VERSION 1.0.0)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra)
 endif()
 
 # find dependencies
@@ -25,9 +25,9 @@ add_custom_target(umdloop_can_library_build_serialcan
         # First generate Version.h and build_no.h
         COMMAND bash ./build_no.sh
         # Then build the libraries with proper CFLAGS
-        COMMAND ${CMAKE_COMMAND} -E env "CFLAGS=-fPIC" "CXXFLAGS=-fPIC" 
+        COMMAND ${CMAKE_COMMAND} -E env "CFLAGS=-fPIC" "CXXFLAGS=-fPIC" "MAKEFLAGS="
                 ${CMAKE_MAKE_PROGRAM} -C Libraries/SerialCAN all
-        COMMAND ${CMAKE_COMMAND} -E env "CFLAGS=-fPIC" "CXXFLAGS=-fPIC"
+        COMMAND ${CMAKE_COMMAND} -E env "CFLAGS=-fPIC" "CXXFLAGS=-fPIC" "MAKEFLAGS="
                 ${CMAKE_MAKE_PROGRAM} -C Libraries/CANAPI all
         WORKING_DIRECTORY ${serialcan_SOURCE_DIR}
         COMMENT "Building SerialCAN libraries with -fPIC"

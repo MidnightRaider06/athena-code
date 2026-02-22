@@ -96,7 +96,10 @@ void RMDHardwareInterface::logger_function(){
         << " | Joint Command Velocity: " << joint_command_velocity_[i] << "\n"
         << "-- State --\n"
         << "Joint Position: " << joint_state_position_[i]
-        << " | Joint Velocity: " << joint_state_velocity_[i] << "\n";
+        << " | Joint Velocity: " << joint_state_velocity_[i] << "\n"
+        << "-- Telemetry --\n"
+        << "Motor Temperature: " << motor_temperature_[i] << " C"
+        << " | Torque Current: " << motor_torque_current_[i] << " A\n";
   }
 
   log_msg += oss.str();
@@ -149,6 +152,9 @@ hardware_interface::CallbackReturn RMDHardwareInterface::on_init(
   motor_position.assign(num_joints, 0.0);
   motor_velocity.assign(num_joints, 0.0);
 
+  motor_temperature_.assign(num_joints, 0.0);
+  motor_torque_current_.assign(num_joints, 0.0);
+
   control_level_.resize(num_joints, integration_level_t::POSITION);
 
   return hardware_interface::CallbackReturn::SUCCESS;
@@ -175,6 +181,13 @@ std::vector<hardware_interface::StateInterface> RMDHardwareInterface::export_sta
 
     state_interfaces.emplace_back(hardware_interface::StateInterface(
       info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, &joint_state_velocity_[i]));
+
+    // Telemetry interfaces (published via /dynamic_joint_states by joint_state_broadcaster)
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints[i].name, "motor_temperature", &motor_temperature_[i]));
+
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints[i].name, "torque_current", &motor_torque_current_[i]));
   }
   
   return state_interfaces;
@@ -214,8 +227,6 @@ void RMDHardwareInterface::on_can_message(const CANLib::CanFrame& frame) {
   std::string result;
 
   std::vector<int> data(8, 0x00);
-  double raw_motor_velocity = 0.0;
-  double raw_motor_position = 0.0;
 
   for(int i = 0; i < num_joints; i++){
     if(can_rx_frame_.id == joint_node_read_ids[i] && 
@@ -240,6 +251,12 @@ void RMDHardwareInterface::on_can_message(const CANLib::CanFrame& frame) {
       // VELOCITY
       // uint16 -> int16 -> double (for calcs)
       motor_velocity[i] = static_cast<double>(static_cast<int16_t>((data[5] << 8) | data[4]));
+
+      // TEMPERATURE (1 byte, degrees C)
+      motor_temperature_[i] = static_cast<double>(data[1]);
+
+      // TORQUE CURRENT (16-bit signed, 0.01A per LSB)
+      motor_torque_current_[i] = static_cast<double>(static_cast<int16_t>((data[3] << 8) | data[2])) * 0.01;
     }
     else {
       if(logger_state == 1) {
@@ -314,7 +331,7 @@ hardware_interface::return_type RMDHardwareInterface::read(
 
 
 hardware_interface::return_type rmd_ros2_control::RMDHardwareInterface::write(
-  const rclcpp::Time & time, const rclcpp::Duration & period)
+  const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
   elapsed_update_time+=period.seconds();
   double update_period = 1.0/update_rate;

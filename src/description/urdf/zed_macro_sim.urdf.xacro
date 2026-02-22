@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+  <xacro:property name="M_PI" value="3.1415926535897931" />
+
+  <xacro:macro name="zed_camera" params="name=zed enable_gnss=false *gnss_origin">
+    <xacro:property name="baseline"         value="0.12"  />
+    <xacro:property name="height"           value="0.03"  />
+    <xacro:property name="screw_offset_x"   value="-0.01" />
+    <xacro:property name="optical_offset_x" value="-0.01" />
+
+    <!-- Camera mounting point (the threaded screw hole in the bottom) -->
+    <link name="${name}_camera_link" />
+
+    <link name="${name}_camera_center">
+      <visual>
+        <origin xyz="${screw_offset_x} 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="file://$(find description)/meshes/zed2i.stl"/>
+        </geometry>
+        <material name="zed_mat">
+          <color rgba="0.25 0.25 0.25 1.0"/>
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="${screw_offset_x} 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="file://$(find description)/meshes/zed2i.stl"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="${name}_camera_center_joint" type="fixed">
+      <parent link="${name}_camera_link"/>
+      <child link="${name}_camera_center"/>
+      <origin xyz="0 0 ${height/2}" rpy="0 0 0" />
+    </joint>
+
+    <link name="${name}_left_camera_frame" />
+    <joint name="${name}_left_camera_joint" type="fixed">
+      <parent link="${name}_camera_center"/>
+      <child link="${name}_left_camera_frame"/>
+      <origin xyz="${optical_offset_x} ${baseline/2} 0" rpy="0 0 0" />
+    </joint>
+
+    <link name="${name}_left_camera_frame_optical"/>
+    <joint name="${name}_left_camera_optical_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="-${M_PI/2} 0.0 -${M_PI/2}"/>
+      <parent link="${name}_left_camera_frame"/>
+      <child link="${name}_left_camera_frame_optical"/>
+    </joint>
+
+    <link name="${name}_right_camera_frame" />
+    <joint name="${name}_right_camera_joint" type="fixed">
+      <parent link="${name}_camera_center"/>
+      <child link="${name}_right_camera_frame"/>
+      <origin xyz="${optical_offset_x} -${baseline/2} 0" rpy="0 0 0" />
+    </joint>
+
+    <link name="${name}_right_camera_frame_optical"/>
+    <joint name="${name}_right_camera_optical_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="-${M_PI/2} 0.0 -${M_PI/2}"/>
+      <parent link="${name}_right_camera_frame"/>
+      <child link="${name}_right_camera_frame_optical"/>
+    </joint>
+
+    <xacro:if value="${enable_gnss}">
+      <link name="${name}_gnss_link" />
+      <joint name="${name}_gnss_joint" type="fixed">
+        <parent link="${name}_camera_link"/>
+        <child link="${name}_gnss_link"/>
+        <xacro:insert_block name="gnss_origin" />
+      </joint>
+    </xacro:if>
+
+  </xacro:macro>
+</robot>

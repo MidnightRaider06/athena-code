@@ -1,12 +1,16 @@
 [Unit]
 Description=UMD Loop CAN Interface Setup
-After=systemd-modules-load.service
+After=systemd-modules-load.service network-pre.target
+Wants=systemd-modules-load.service
+Before=network.target
 
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/umdloop_can_setup.sh
 ExecStop=/sbin/ip link set can0 down
 RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

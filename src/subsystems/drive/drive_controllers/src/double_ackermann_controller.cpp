@@ -172,7 +172,7 @@ controller_interface::CallbackReturn DoubleAckermannController::on_configure(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
-void DoubleAckermannController::reference_callback(const std::shared_ptr<ControllerReferenceMsg> msg)
+void DoubleAckermannController::reference_callback(const std::shared_ptr<ControllerReferenceMsg> /*msg*/)
 {
   // if (msg->joint_names.size() == joints.size())
   // {

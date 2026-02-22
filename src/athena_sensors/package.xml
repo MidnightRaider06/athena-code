@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>athena_sensors</name>
+  <version>0.0.0</version>
+  <description>Launch files for ZED camera and combined sensor bringup (ZED + GPS)</description>
+  <maintainer email="todo@todo.com">UMD Loop</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- <exec_depend>zed_wrapper</exec_depend> -->
+  <exec_depend>athena_gps</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

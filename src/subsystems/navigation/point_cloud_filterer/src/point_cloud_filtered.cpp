@@ -12,8 +12,8 @@ public:
   PointCloudFilterer()
   : Node("point_cloud_filterer") {
 
-    input_topic_  = declare_parameter<std::string>("input_topic", "/depth_camera/points");
-    output_topic_ = declare_parameter<std::string>("output_topic", "/depth_camera/points_corrected");
+    input_topic_  = declare_parameter<std::string>("input_topic", "/zed/zed_node/point_cloud/cloud_registered");
+    output_topic_ = declare_parameter<std::string>("output_topic", "/zed/zed_node/point_cloud/cloud_registered_corrected");
 
     frame_override_ = declare_parameter<std::string>("frame_override", "");
 

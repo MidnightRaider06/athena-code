@@ -5,30 +5,52 @@
 #include "ctre/Phoenix.h"
 #include "ctre/phoenix/unmanaged/Unmanaged.h"
 
-// TalonSRX motor(8);
+/**
+ * @brief Per-joint motor configuration.
+ *
+ * Replaces the old hardcoded #defines so that each joint can have its own
+ * encoder resolution, gear ratio, PID gains, etc.  Defaults match the
+ * Pololu 37D gearmotors that were previously hardcoded.
+ */
+struct MotorConfig {
+  double encoder_resolution = 64.0;    // Encoder counts per motor revolution
+  double gear_ratio         = 102.08;  // Motor-to-output shaft gear ratio
+  double distance_per_rev   = 0.0015;  // Meters per output revolution (prismatic only)
+  bool   inverted           = true;    // Motor output direction
+  bool   sensor_phase       = true;    // Encoder phase relative to motor
+  double kP                 = 0.25;    // Proportional gain (slot 0)
+  double kI                 = 0.0;     // Integral gain (slot 0)
+  double kD                 = 0.0;     // Derivative gain (slot 0)
+  double kF                 = 0.0;     // Feed-forward gain (slot 0)
+  int    config_timeout_ms  = 100;     // Timeout for TalonSRX config calls
+};
 
-void initMotor(TalonSRX *);
+// Motor initialization
+void initMotor(TalonSRX * motor, const MotorConfig & config, const std::string & can_interface);
 
-// Conversions
-double convertRevtoTalonUnits(float); // Converts Revolutions to Talon Units
-double convertTalonUnitstoRev(float); // Converts Talon units to Revolutions
-double convertRevToDistance(float);  // Converts revolutions of motor to meters
-double convertDistanceToRev(float); // Converts meters to revolutions of motor
+// Conversions (config-aware)
+double convertRevtoTalonUnits(double rev, const MotorConfig & config);
+double convertTalonUnitstoRev(double counts, const MotorConfig & config);
+double convertRevToDistance(double rev, const MotorConfig & config);
+double convertDistanceToRev(double distance, const MotorConfig & config);
 
-// Getters
-float getPositionTalonUnits(TalonSRX *); // Retrieves Position in Talon Encoder Units
-float getPositionRevolutions(TalonSRX *); // Retrieves Position in Revolutions from start
-float getPositionDistance(TalonSRX *); // Retrieves Position in meters from start
-float getVelocityRPM(TalonSRX *); // Retrieves Velocity for the motor in RPM
-float getClawVelocity(TalonSRX *); // Retrieves Velocity of claw in m/s
-// void setDegrees(TalonSRX *, double);
+// Getters — position
+float getPositionTalonUnits(TalonSRX * motor);
+float getPositionRevolutions(TalonSRX * motor, const MotorConfig & config);
+float getPositionDistance(TalonSRX * motor, const MotorConfig & config);
+float getPositionRadians(TalonSRX * motor, const MotorConfig & config);
 
-// Setting States
-void setDutyCycle(TalonSRX *, double, int); // Sets duty cycle, aka percent of max speed basically
-float setVelocityFromLinearVelocity(TalonSRX *, double, int); // Sets velocity (units per 100ms) based on input velocity (mm/s), returns this as well
-float setVelocityFromAngularVelocity(TalonSRX *, double, int); // Sets velocity (units per 100ms) based on input velocity (radians/s), returns this as well
-float setPositionFromDisplacement(TalonSRX *, double, int); // Sets position (Talon units) based on input displacement (cm), returns this as well
-float setPositionFromJointCommand(TalonSRX *, double, int); // Sets position (Talon units) based on input joint command (radians), returns this as well
-void stopMotor(TalonSRX *, int); // Stops the motor
+// Getters — velocity
+float getVelocityRPM(TalonSRX * motor, const MotorConfig & config);
+float getLinearVelocity(TalonSRX * motor, const MotorConfig & config);   // m/s  (prismatic)
+float getAngularVelocity(TalonSRX * motor, const MotorConfig & config);  // rad/s (revolute)
+
+// Setters
+void  setDutyCycle(TalonSRX * motor, double dutyCycle, int ms);
+float setVelocityFromLinearVelocity(TalonSRX * motor, double vel_m_per_s, int ms, const MotorConfig & config);
+float setVelocityFromAngularVelocity(TalonSRX * motor, double vel_rad_per_s, int ms, const MotorConfig & config);
+float setPositionFromDisplacement(TalonSRX * motor, double displacement_m, int ms, const MotorConfig & config);
+float setPositionFromJointCommand(TalonSRX * motor, double position_rad, int ms, const MotorConfig & config);
+void  stopMotor(TalonSRX * motor, int ms);
 
 #endif

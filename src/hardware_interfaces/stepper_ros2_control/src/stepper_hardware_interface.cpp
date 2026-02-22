@@ -429,7 +429,7 @@ hardware_interface::return_type stepper_ros2_control::STEPPERHardwareInterface::
       joint_velocity = joint_orientation[i]*calculate_motor_velocity_from_desired_joint_velocity(joint_command_velocity_[i], joint_gear_ratios[i]);
 
       if(DEBUG_MODE == 1) {
-        RCLCPP_INFO(rclcpp::get_logger("STEPPERHardwareInterface"), "Writing velocities for: %s Joint velocity of motor (0.01 dps): %d Joint command velocity: %f Orientation: %f CAN ID: %d", 
+        RCLCPP_INFO(rclcpp::get_logger("STEPPERHardwareInterface"), "Writing velocities for: %s Joint velocity of motor (0.01 dps): %d Joint command velocity: %f Orientation: %d", 
                                                         info_.joints[i].name.c_str(),
                                                         joint_velocity,
                                                         joint_command_velocity_[i],

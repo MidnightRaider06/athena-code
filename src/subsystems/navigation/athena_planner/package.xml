@@ -23,11 +23,22 @@
   <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
 
+  <exec_depend>nav2_controller</exec_depend>
+  <exec_depend>nav2_smoother</exec_depend>
   <exec_depend>nav2_planner</exec_depend>
+  <exec_depend>nav2_behaviors</exec_depend>
+  <exec_depend>nav2_bt_navigator</exec_depend>
+  <exec_depend>nav2_waypoint_follower</exec_depend>
+  <exec_depend>nav2_velocity_smoother</exec_depend>
   <exec_depend>nav2_costmap_2d</exec_depend>
   <exec_depend>nav2_lifecycle_manager</exec_depend>
   <exec_depend>nav2_smac_planner</exec_depend>
   <exec_depend>athena_map</exec_depend>
+  <!-- <exec_depend>athena_sensors</exec_depend> We remove this dependency so when we run rosdep in Ci it works properly (we can't build the zed components dependency of athena_sensors so we fade the whole thing) -->
+  <exec_depend>localizer</exec_depend>
+  <exec_depend>gps_goal</exec_depend>
+  <exec_depend>point_cloud_filterer</exec_depend>
+  <exec_depend>topic_tools</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

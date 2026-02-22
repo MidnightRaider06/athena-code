@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find description)/urdf/zed_macro_sim.urdf.xacro"/>
+
+  <!--
+    Parameters:
+      parent       - parent link to attach the camera to
+      camera_name  - camera name used for all link/joint/topic names (default: zed)
+      sim_gazebo   - when true, adds a Gazebo depth sensor on the left camera frame (default: false)
+      *origin      - transform from parent to the camera mounting screw point
+  -->
+  <xacro:macro name="zed_camera_sensor" params="parent camera_name:=zed sim_gazebo:=false *origin">
+
+    <joint name="${camera_name}_mount_joint" type="fixed">
+      <xacro:insert_block name="origin"/>
+      <parent link="${parent}"/>
+      <child link="${camera_name}_camera_link"/>
+    </joint>
+
+    <xacro:zed_camera name="${camera_name}" enable_gnss="false">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:zed_camera>
+
+    <xacro:if value="${sim_gazebo}">
+      <gazebo reference="${camera_name}_left_camera_frame">
+        <sensor name="${camera_name}_depth_sensor" type="depth">
+          <always_on>1</always_on>
+          <update_rate>15</update_rate>
+          <visualize>true</visualize>
+          <topic>${camera_name}/zed_node/point_cloud/cloud_registered</topic>
+          <ign_frame_id>${camera_name}_left_camera_frame_optical</ign_frame_id>
+          <camera name="${camera_name}_depth">
+            <horizontal_fov>1.8151</horizontal_fov>
+            <image>
+              <width>672</width>
+              <height>376</height>
+              <format>R_FLOAT32</format>
+            </image>
+            <clip>
+              <near>0.2</near>
+              <far>20.0</far>
+            </clip>
+            <depth_camera>
+              <output>points</output>
+            </depth_camera>
+          </camera>
+          <plugin filename="libignition-gazebo-sensors-system.so" name="ignition::gazebo::systems::Sensors">
+            <render_engine>ogre2</render_engine>
+          </plugin>
+        </sensor>
+
+        <sensor name="${camera_name}_rgb_sensor" type="camera">
+          <always_on>1</always_on>
+          <update_rate>15</update_rate>
+          <visualize>true</visualize>
+          <topic>${camera_name}/zed_node/left/image_rect_color</topic>
+          <ign_frame_id>${camera_name}_left_camera_frame_optical</ign_frame_id>
+          <camera name="${camera_name}_rgb">
+            <horizontal_fov>1.8151</horizontal_fov>
+            <image>
+              <width>672</width>
+              <height>376</height>
+              <format>RGB_INT8</format>
+            </image>
+            <clip>
+              <near>0.2</near>
+              <far>20.0</far>
+            </clip>
+          </camera>
+        </sensor>
+      </gazebo>
+    </xacro:if>
+
+  </xacro:macro>
+</robot>

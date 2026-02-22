@@ -94,6 +94,7 @@ private:
   std::vector<int> joint_node_ids;
   std::string can_interface;
   std::vector<TalonSRX*> talon_motors;
+  std::vector<MotorConfig> motor_configs_;
   std::thread worker;
   std::atomic<bool> is_running = false;
 

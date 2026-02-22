@@ -231,7 +231,7 @@ controller_interface::return_type ManualArmJointByJointController::update(
     }
 
     // Once actuator reaches original position, stop movement
-    if (actuator_active_ = true && joint_velocities_[6] == 0.0 && actuator_iterator < 0){
+    if (actuator_active_ == true && joint_velocities_[6] == 0.0 && actuator_iterator < 0){
       actuator_active_ = false;
     }
 

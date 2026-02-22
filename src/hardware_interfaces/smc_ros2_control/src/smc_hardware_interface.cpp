@@ -91,7 +91,10 @@ void SMCHardwareInterface::logger_function(){
         << " | Joint Command Velocity: " << joint_command_velocity_[i] << "\n"
         << "-- State --\n"
         << "Joint Position: " << joint_state_position_[i]
-        << " | Joint Velocity: " << joint_state_velocity_[i] << "\n";
+        << " | Joint Velocity: " << joint_state_velocity_[i] << "\n"
+        << "-- Telemetry --\n"
+        << "Motor Temperature: " << motor_temperature_[i] << " C"
+        << " | Torque Current: " << motor_torque_current_[i] << " A\n";
   }
 
   log_msg += oss.str();
@@ -136,6 +139,9 @@ hardware_interface::CallbackReturn SMCHardwareInterface::on_init(
   motor_position.assign(num_joints, 0.0);
   motor_velocity.assign(num_joints, 0.0);
 
+  motor_temperature_.assign(num_joints, 0.0);
+  motor_torque_current_.assign(num_joints, 0.0);
+
   control_level_.resize(num_joints, integration_level_t::POSITION);
 
   return hardware_interface::CallbackReturn::SUCCESS;
@@ -162,6 +168,13 @@ std::vector<hardware_interface::StateInterface> SMCHardwareInterface::export_sta
 
     state_interfaces.emplace_back(hardware_interface::StateInterface(
       info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, &joint_state_velocity_[i]));
+
+    // Telemetry interfaces (published via /dynamic_joint_states by joint_state_broadcaster)
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints[i].name, "motor_temperature", &motor_temperature_[i]));
+
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints[i].name, "torque_current", &motor_torque_current_[i]));
   }
   
   return state_interfaces;
@@ -203,7 +216,7 @@ void SMCHardwareInterface::on_can_message(const CANLib::CanFrame& frame) {
   int data[8] = {0x00};
 
   for(int i = 0; i < num_joints; i++){  
-    if(can_rx_frame_.id == joint_node_ids[i] && 
+    if(can_rx_frame_.id == static_cast<uint32_t>(joint_node_ids[i]) && 
       (can_rx_frame_.data[0] == SPEED_CONTROL_CMD  || 
        can_rx_frame_.data[0] == ABSOLUTE_POS_CONTROL_CMD  || 
        can_rx_frame_.data[0] == MOTOR_STATUS_2_CMD) &&
@@ -225,8 +238,14 @@ void SMCHardwareInterface::on_can_message(const CANLib::CanFrame& frame) {
       // SPEED
       // uint16 -> int16 -> double (for calcs)
       motor_velocity[i] = static_cast<double>(static_cast<int16_t>((data[5] << 8) | data[4]));
+
+      // TEMPERATURE (1 byte, degrees C)
+      motor_temperature_[i] = static_cast<double>(data[1]);
+
+      // TORQUE CURRENT (16-bit signed, 0.01A per LSB)
+      motor_torque_current_[i] = static_cast<double>(static_cast<int16_t>((data[3] << 8) | data[2])) * 0.01;
     }
-    else if(can_rx_frame_.id == joint_node_ids[i] && can_rx_frame_.data[0] == 0x92){
+    else if(can_rx_frame_.id == static_cast<uint32_t>(joint_node_ids[i]) && can_rx_frame_.data[0] == 0x92){
       data[0] = 0x92;
       data[1] = can_rx_frame_.data[1]; // Multi-turn low byte
       data[2] = can_rx_frame_.data[2];

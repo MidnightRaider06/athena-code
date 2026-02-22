@@ -114,10 +114,10 @@ struct Estop_msg_t final {
     }
 #endif
 
-    void encode_buf(uint8_t* buf) const {
+    void encode_buf(uint8_t* /*buf*/) const {
     }
 
-    void decode_buf(const uint8_t* buf) {
+    void decode_buf(const uint8_t* /*buf*/) {
     }
 
     static const uint8_t cmd_id = 0x002;
@@ -869,10 +869,10 @@ struct Enter_DFU_Mode_msg_t final {
     }
 #endif
 
-    void encode_buf(uint8_t* buf) const {
+    void encode_buf(uint8_t* /*buf*/) const {
     }
 
-    void decode_buf(const uint8_t* buf) {
+    void decode_buf(const uint8_t* /*buf*/) {
     }
 
     static const uint8_t cmd_id = 0x01F;

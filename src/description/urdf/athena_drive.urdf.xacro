@@ -15,8 +15,7 @@
   <xacro:include filename="imu.xacro"/>
   <xacro:include filename="gps.xacro"/>
   <xacro:include filename="ground_truth_odom.xacro"/>
-  <xacro:include filename="depth_camera.xacro"/> 
-  <xacro:include filename="camera.xacro"/>
+  <xacro:include filename="zed_camera.xacro"/>
 
 
   <!-- Load robot's macro with parameters -->
@@ -57,9 +56,9 @@
 
   <xacro:ground_truth_odometry robot_base_frame="base_footprint"/>
  
-  <xacro:depth_camera parent="base_footprint"> 
-      <origin xyz=".5 0.1 0.1" rpy="0 0 0"/>
-  </xacro:depth_camera>
+  <xacro:zed_camera_sensor parent="base_footprint" camera_name="zed" sim_gazebo="$(arg sim_gazebo)">
+    <origin xyz=".5 0.1 0.1" rpy="0 0 0"/>
+  </xacro:zed_camera_sensor>
 
   <xacro:camera parent="base_footprint">
     <origin xyz="0.0 0.0 0.15" rpy="0 0 0"/>

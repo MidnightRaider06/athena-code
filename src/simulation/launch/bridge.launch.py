@@ -6,10 +6,24 @@ def generate_launch_description():
         Node(
             package='ros_gz_bridge',
             executable='parameter_bridge',
-            name='depth_camera_bridge',
+            name='zed_point_cloud_bridge',
             output='screen',
             arguments=[
-                '/depth_camera/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked',
+                '/zed/zed_node/point_cloud/cloud_registered/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
+            ],
+            remappings=[
+                ('/zed/zed_node/point_cloud/cloud_registered/points',
+                 '/zed/zed_node/point_cloud/cloud_registered'),
+            ],
+        ),
+
+        Node(
+            package='ros_gz_bridge',
+            executable='parameter_bridge',
+            name='zed_rgb_bridge',
+            output='screen',
+            arguments=[
+                '/zed/zed_node/left/image_rect_color@sensor_msgs/msg/Image@gz.msgs.Image',
             ],
         ),
 
