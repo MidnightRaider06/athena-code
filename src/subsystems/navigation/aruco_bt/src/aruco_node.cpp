@@ -14,22 +14,17 @@ class ArUcoNode : public rclcpp::Node
 public:
     ArUcoNode() : Node("aruco_node")
     {
-        this->declare_parameter("sim", false);
         this->declare_parameter("marker_size", 0.2);
         
-        bool sim = this->get_parameter("sim").as_bool();
+        bool sim = this->get_parameter("use_sim_time").as_bool();
         marker_size_ = this->get_parameter("marker_size").as_double();
 
-        // Set topic names based on sim parameter
-        std::string image_topic;
-        std::string camera_info_topic;
         if (sim) {
-            image_topic = "/camera";
-            camera_info_topic = "/camera_info";
-        } else {
-            image_topic = "/zed/zed_node/left_gray/image_rect_gray";
-            camera_info_topic = "/zed/zed_node/left_gray/camera_info";
+            marker_size_ = 0.50;
         }
+        
+        std::string image_topic = "/zed/zed_node/left/image_rect_color";
+        std::string camera_info_topic = "/zed/zed_node/left/camera_info";
 
         RCLCPP_INFO(this->get_logger(), "sim=%s", sim ? "true" : "false");
         RCLCPP_INFO(this->get_logger(), "marker_size=%.3f meters", marker_size_);
@@ -50,8 +45,8 @@ public:
             camera_info_topic, 10,
             std::bind(&ArUcoNode::cameraInfoCallback, this, std::placeholders::_1));
 
-        image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("aruco_annotated_img", 10);
-        pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("aruco_pose", 10);
+        image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("/aruco_annotated_img", 10);
+        pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/aruco_pose", 10);
 
         marker_id_ = -1;
         camera_info_received_ = false;

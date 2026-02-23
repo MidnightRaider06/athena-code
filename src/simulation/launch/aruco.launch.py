@@ -5,12 +5,6 @@ from launch_ros.actions import Node
 
 ARGUMENTS = [
     DeclareLaunchArgument(
-        'sim',
-        default_value='true',
-        choices=['true', 'false'],
-        description='Use simulation topics'
-    ),
-    DeclareLaunchArgument(
         'marker_size',
         default_value='0.2',
         description='Size of ArUco marker in meters'
@@ -23,7 +17,7 @@ def generate_launch_description():
         executable='aruco_node',
         name='aruco_node',
         parameters=[
-            {'sim': LaunchConfiguration('sim')},
+            {'use_sim_time': LaunchConfiguration('use_sim_time')},
             {'marker_size': LaunchConfiguration('marker_size')}
         ],
         output='screen'
