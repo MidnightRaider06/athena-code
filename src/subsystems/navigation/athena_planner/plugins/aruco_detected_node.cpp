@@ -34,13 +34,13 @@ ArUcoDetected::ArUcoDetected(
 
 BT::NodeStatus ArUcoDetected::tick()
 {
-  RCLCPP_DEBUG(node_->get_logger(), "ArUcoDetected::tick() called");
+  // RCLCPP_INFO(node_->get_logger(), "ArUcoDetected::tick() called");
 
   // Spin to process callbacks
   callback_group_executor_.spin_some();
 
   if (last_detection_time_.nanoseconds() == 0) {
-    RCLCPP_DEBUG(node_->get_logger(), "ArUco never detected");
+    // RCLCPP_INFO(node_->get_logger(), "ArUco never detected");
     return BT::NodeStatus::FAILURE;
   }
 
@@ -48,11 +48,14 @@ BT::NodeStatus ArUcoDetected::tick()
   auto current_time = node_->now();
   double time_since_detection = (current_time - last_detection_time_).seconds();
 
+  // RCLCPP_INFO(node_->get_logger(), "Current time: %.2f", current_time.seconds());
+  // RCLCPP_INFO(node_->get_logger(), "Last detection time: %.2f", last_detection_time_.seconds());
+
   if (time_since_detection < timeout_) {
-    RCLCPP_DEBUG(node_->get_logger(), "ArUco DETECTED (%.2fs ago)", time_since_detection);
+    // RCLCPP_INFO(node_->get_logger(), "ArUco DETECTED (%.2fs ago)", time_since_detection);
     return BT::NodeStatus::SUCCESS;
   } else {
-    RCLCPP_DEBUG(node_->get_logger(), "ArUco too old (%.2fs ago)", time_since_detection);
+    // RCLCPP_INFO(node_->get_logger(), "ArUco too old (%.2fs ago)", time_since_detection);
     return BT::NodeStatus::FAILURE;
   }
 }

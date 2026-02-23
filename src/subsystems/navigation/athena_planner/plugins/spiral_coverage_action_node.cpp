@@ -92,6 +92,7 @@ namespace bt_nodes
         // Archimedean spiral equation: r = a * θ
         // For uniform spacing 's' between loops: a = s / (2π)
         const double a = spacing / (2.0 * M_PI);
+        const double yaw0 = tf2::getYaw(current_pose.pose.orientation);
 
         // Calculate maximum angle needed to reach the desired radius
         // From r = a * θ, θ_max = r_max / a
@@ -105,25 +106,23 @@ namespace bt_nodes
         }
 
         // Start at a minimum radius to avoid sharp initial turns
-            const double min_start_radius = 1.0;
-            const double theta_start = (a > 0.0) ? (min_start_radius / a) : 0.0;
+        const double min_start_radius = 1.5;
+        double theta = 0.0;  // Start from minimum radius instead of center
+        while (theta <= max_angle) {
 
-            double theta = theta_start;  // Start from minimum radius instead of center
-            while (theta <= max_angle) {
+            const double r = min_start_radius + (a * theta);
 
-                const double r = a * theta;
-
-                // Stop if we've exceeded the maximum radius
-                if (r > radius) {
+            // Stop if we've exceeded the maximum radius
+            if (r > radius) {
                 break;
             }
 
             // Polar to cartesian
-            const double x = current_pose.pose.position.x + r * std::cos(theta);
-            const double y = current_pose.pose.position.y + r * std::sin(theta);
+            const double x = current_pose.pose.position.x + r * std::cos(yaw0 + theta + M_PI_2);
+            const double y = current_pose.pose.position.y + r * std::sin(yaw0 + theta + M_PI_2);
 
             // Calculate orientation tangent to spiral
-            const double orientation_angle = calculateTangentAngle(theta);
+            const double orientation_angle = yaw0 + theta;
 
 
             geometry_msgs::msg::PoseStamped pose;
@@ -145,15 +144,6 @@ namespace bt_nodes
         }
 
         return path;
-    }
-
-    double SpiralCoverageAction::calculateTangentAngle(double theta)
-    {
-        if (theta < 1e-6) {
-            return 2.0 * theta;
-        }
-        
-        return theta + std::atan(theta);
     }
 
 }  // namespace bt_nodes
