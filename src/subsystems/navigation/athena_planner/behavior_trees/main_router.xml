@@ -8,7 +8,7 @@
   <BehaviorTree ID="MainTree">
     <PipelineSequence name="ModeRouter">
 
-      <NavSelector topic_name="/nav_mode" default_nav_mode="ArucoDetection" nav_mode="{nav_mode}" />
+      <NavSelector topic_name="/nav_mode" default_nav_mode="GNSS" nav_mode="{nav_mode}" />
 
       <ReactiveFallback name="SelectMode">
 
