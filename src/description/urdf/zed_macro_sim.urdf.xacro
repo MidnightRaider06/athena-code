@@ -47,6 +47,13 @@
       <parent link="${name}_left_camera_frame"/>
       <child link="${name}_left_camera_frame_optical"/>
     </joint>
+    
+    <link name="athena/base_footprint/${name}_rgb_sensor"/>
+    <joint name="${name}_rgb_sensor_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="-${M_PI/2} 0.0 -${M_PI/2}"/>
+      <parent link="${name}_left_camera_frame"/>
+      <child link="athena/base_footprint/${name}_rgb_sensor"/>
+    </joint>
 
     <link name="${name}_right_camera_frame" />
     <joint name="${name}_right_camera_joint" type="fixed">
