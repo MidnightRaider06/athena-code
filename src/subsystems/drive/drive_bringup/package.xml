@@ -15,6 +15,8 @@
   <exec_depend>forward_command_controller</exec_depend>
   <exec_depend>joint_state_broadcaster</exec_depend>
   <exec_depend>ackermann_steering_controller</exec_depend>
+  <exec_depend>general_controllers</exec_depend>
+  <exec_depend>drive_controllers</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>ros2_controllers_test_nodes</exec_depend>
   <exec_depend>teleop_twist_joy</exec_depend>

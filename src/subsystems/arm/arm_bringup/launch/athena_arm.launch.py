@@ -259,6 +259,12 @@ def generate_launch_description():
         arguments=["joint_state_broadcaster"],
     )
 
+    motor_status_broadcaster_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["motor_status_broadcaster", "-c", "/controller_manager"],
+    )
+
     robot_controller_names = [robot_controller]
     robot_controller_spawners = []
     for controller in robot_controller_names:
@@ -307,6 +313,14 @@ def generate_launch_description():
                     actions=[joint_state_broadcaster_spawner],
                 ),
             ],
+        )
+    )
+
+    # Delay motor_status_broadcaster after joint_state_broadcaster
+    delay_motor_status_broadcaster_after_joint_state_broadcaster = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=joint_state_broadcaster_spawner,
+            on_exit=[motor_status_broadcaster_spawner],
         )
     )
 
@@ -385,6 +399,7 @@ def generate_launch_description():
             # move_group_node,
             # hello_moveit_node,
             delay_joint_state_broadcaster_spawner_after_ros2_control_node, # reads from hardware and sends values to /joint_states
+            delay_motor_status_broadcaster_after_joint_state_broadcaster,
             delay_rviz_after_joint_state_broadcaster_spawner,
             controller_switcher_node,
         ]

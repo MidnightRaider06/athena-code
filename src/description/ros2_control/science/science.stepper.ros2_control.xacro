@@ -15,6 +15,8 @@
                 <state_interface name="position"/>
                 <param name="initial_position">0.0</param>
                 <state_interface name="velocity"/>
+                <state_interface name="motor_temperature"/>
+                <state_interface name="torque_current"/>
                 <param name="gear_ratio">1</param>
 
                 <!-- TEMPORARY PARAMETERS -->
@@ -27,6 +29,8 @@
                 <state_interface name="position"/>
                 <param name="initial_position">0.0</param>
                 <state_interface name="velocity"/>
+                <state_interface name="motor_temperature"/>
+                <state_interface name="torque_current"/>
                 <param name="gear_ratio">1</param>
 
                 <!-- TEMPORARY PARAMETERS -->

@@ -84,6 +84,9 @@ hardware_interface::CallbackReturn STEPPERHardwareInterface::on_init(
     RCLCPP_INFO(rclcpp::get_logger("STEPPERHardwareInterface"), "Joint %zu command vel in on_init: %f", i, joint_command_velocity_[i]);
   }
 
+  motor_temperature_.assign(num_joints, 0.0);
+  motor_torque_current_.assign(num_joints, 0.0);
+
   encoder_position = 0.0;
   motor_position = 0.0;
   motor_velocity = 0.0;
@@ -118,6 +121,12 @@ std::vector<hardware_interface::StateInterface> STEPPERHardwareInterface::export
 
     state_interfaces.emplace_back(hardware_interface::StateInterface(
       info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, &joint_state_velocity_[i]));
+
+    // Telemetry interfaces
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints[i].name, "motor_temperature", &motor_temperature_[i]));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints[i].name, "torque_current", &motor_torque_current_[i]));
   }
   
   return state_interfaces;
@@ -334,6 +343,12 @@ hardware_interface::return_type STEPPERHardwareInterface::read(
 
       // CALCULATING JOINT STATE
       joint_state_velocity_[i] = calculate_joint_velocity_from_motor_velocity(motor_velocity, joint_gear_ratios[i]);
+
+      // TEMPERATURE (1 byte, degrees C)
+      motor_temperature_[i] = static_cast<double>(data[1]);
+
+      // TORQUE CURRENT (16-bit signed, 0.01A per LSB)
+      motor_torque_current_[i] = static_cast<double>(static_cast<int16_t>((data[3] << 8) | data[2])) * 0.01;
 
     }
     else if(received_joint_data_.data[0] == 0x92) {

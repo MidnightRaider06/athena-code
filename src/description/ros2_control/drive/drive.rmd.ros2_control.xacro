@@ -19,6 +19,8 @@
         <command_interface name="velocity"/>
         <state_interface name="position"/>
         <state_interface name="velocity"/>
+        <state_interface name="motor_temperature"/>
+        <state_interface name="torque_current"/>
       </joint>
       
       <joint name="propulsion_fr_joint">
@@ -30,6 +32,8 @@
         <command_interface name="velocity"/>
         <state_interface name="position"/>
         <state_interface name="velocity"/>
+        <state_interface name="motor_temperature"/>
+        <state_interface name="torque_current"/>
       </joint>
 
       <joint name="propulsion_bl_joint">
@@ -41,6 +45,8 @@
         <command_interface name="velocity"/>
         <state_interface name="position"/>
         <state_interface name="velocity"/>
+        <state_interface name="motor_temperature"/>
+        <state_interface name="torque_current"/>
       </joint>
       
       <joint name="propulsion_br_joint">
@@ -52,6 +58,8 @@
         <command_interface name="velocity"/>
         <state_interface name="position"/>
         <state_interface name="velocity"/>
+        <state_interface name="motor_temperature"/>
+        <state_interface name="torque_current"/>
       </joint>
     </ros2_control>
   </xacro:macro>

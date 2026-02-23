@@ -90,6 +90,10 @@ private:
   std::vector<double> joint_command_position_;
   std::vector<double> joint_command_velocity_;
 
+  // Telemetry data
+  std::vector<double> motor_temperature_;    // Motor temperature in °C
+  std::vector<double> motor_torque_current_; // Motor output current in A
+
   // Talon specific information
   std::vector<int> joint_node_ids;
   std::string can_interface;

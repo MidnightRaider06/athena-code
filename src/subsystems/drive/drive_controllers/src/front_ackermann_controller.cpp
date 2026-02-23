@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "athena_drive_controllers/single_ackermann_controller.hpp"
+#include "athena_drive_controllers/front_ackermann_controller.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -27,13 +27,13 @@
 
 namespace drive_controllers
 {
-SingleAckermannController::SingleAckermannController() : controller_interface::ControllerInterface() {}
+FrontAckermannController::FrontAckermannController() : controller_interface::ControllerInterface() {}
 
-controller_interface::CallbackReturn SingleAckermannController::on_init()
+controller_interface::CallbackReturn FrontAckermannController::on_init()
 {
   try
   {
-    param_listener_ = std::make_shared<single_ackermann_controller::ParamListener>(get_node());
+    param_listener_ = std::make_shared<front_ackermann_controller::ParamListener>(get_node());
   }
   catch (const std::exception & e)
   {
@@ -44,7 +44,7 @@ controller_interface::CallbackReturn SingleAckermannController::on_init()
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
-controller_interface::CallbackReturn SingleAckermannController::on_configure(
+controller_interface::CallbackReturn FrontAckermannController::on_configure(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
   params_ = param_listener_->get_params();
@@ -57,7 +57,7 @@ controller_interface::CallbackReturn SingleAckermannController::on_configure(
 
   ref_subscriber_ = get_node()->create_subscription<ControllerReferenceMsg>(
     "~/reference", subscribers_qos,
-    std::bind(&SingleAckermannController::reference_callback, this, std::placeholders::_1));
+    std::bind(&FrontAckermannController::reference_callback, this, std::placeholders::_1));
 
   input_ref_.writeFromNonRT(std::make_shared<ControllerReferenceMsg>());
 
@@ -71,12 +71,12 @@ controller_interface::CallbackReturn SingleAckermannController::on_configure(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
-void SingleAckermannController::reference_callback(const std::shared_ptr<ControllerReferenceMsg> msg)
+void FrontAckermannController::reference_callback(const std::shared_ptr<ControllerReferenceMsg> msg)
 {
   input_ref_.writeFromNonRT(msg);
 }
 
-controller_interface::InterfaceConfiguration SingleAckermannController::command_interface_configuration() const
+controller_interface::InterfaceConfiguration FrontAckermannController::command_interface_configuration() const
 {
   controller_interface::InterfaceConfiguration command_interfaces_config;
   command_interfaces_config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
@@ -93,7 +93,7 @@ controller_interface::InterfaceConfiguration SingleAckermannController::command_
   return command_interfaces_config;
 }
 
-controller_interface::InterfaceConfiguration SingleAckermannController::state_interface_configuration() const
+controller_interface::InterfaceConfiguration FrontAckermannController::state_interface_configuration() const
 {
   controller_interface::InterfaceConfiguration state_interfaces_config;
   state_interfaces_config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
@@ -110,7 +110,7 @@ controller_interface::InterfaceConfiguration SingleAckermannController::state_in
   return state_interfaces_config;
 }
 
-bool SingleAckermannController::find_state_interface_index(
+bool FrontAckermannController::find_state_interface_index(
   const std::string & name, size_t & index) const
 {
   for (size_t i = 0; i < state_interfaces_.size(); ++i) {
@@ -122,7 +122,7 @@ bool SingleAckermannController::find_state_interface_index(
   return false;
 }
 
-controller_interface::CallbackReturn SingleAckermannController::on_activate(
+controller_interface::CallbackReturn FrontAckermannController::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
   // Initialize all command interfaces to zero to prevent initial movement
@@ -139,11 +139,11 @@ controller_interface::CallbackReturn SingleAckermannController::on_activate(
   linear_vel_buffer_.clear();
   angular_vel_buffer_.clear();
 
-  RCLCPP_INFO(get_node()->get_logger(), "SingleAckermannController activated with all commands set to zero");
+  RCLCPP_INFO(get_node()->get_logger(), "FrontAckermannController activated with all commands set to zero");
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
-controller_interface::CallbackReturn SingleAckermannController::on_deactivate(
+controller_interface::CallbackReturn FrontAckermannController::on_deactivate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
   for (size_t i = 0; i < command_interfaces_.size(); ++i)
@@ -162,7 +162,7 @@ controller_interface::CallbackReturn SingleAckermannController::on_deactivate(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
-controller_interface::return_type SingleAckermannController::update(
+controller_interface::return_type FrontAckermannController::update(
   const rclcpp::Time & time, const rclcpp::Duration & /*period*/)
 {
   auto current_ref = input_ref_.readFromRT();
@@ -257,6 +257,14 @@ controller_interface::return_type SingleAckermannController::update(
   command_interfaces_[3].set_value(fr_wheel_ang_vel);
   command_interfaces_[4].set_value(rl_wheel_ang_vel);
   command_interfaces_[5].set_value(rr_wheel_ang_vel);
+
+  const double rad_s_to_rpm = 60.0 / (2.0 * M_PI);
+  RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(), 500,
+    "Wheel speeds [RPM] - FL: %.2f, FR: %.2f, RL: %.2f, RR: %.2f",
+    fl_wheel_ang_vel * rad_s_to_rpm,
+    fr_wheel_ang_vel * rad_s_to_rpm,
+    rl_wheel_ang_vel * rad_s_to_rpm,
+    rr_wheel_ang_vel * rad_s_to_rpm);
 
   // ── Odometry computation ──────────────────────────────────────────────
   // Determine the robot's actual linear and angular velocity for odom.
@@ -407,4 +415,4 @@ controller_interface::return_type SingleAckermannController::update(
 #include "pluginlib/class_list_macros.hpp"
 
 PLUGINLIB_EXPORT_CLASS(
-  drive_controllers::SingleAckermannController, controller_interface::ControllerInterface)
+  drive_controllers::FrontAckermannController, controller_interface::ControllerInterface)

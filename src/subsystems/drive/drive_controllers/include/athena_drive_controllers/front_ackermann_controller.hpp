@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ATHENA_DRIVE_CONTROLLERS__SINGLE_ACKERMANN_CONTROLLER_HPP_
-#define ATHENA_DRIVE_CONTROLLERS__SINGLE_ACKERMANN_CONTROLLER_HPP_
+#ifndef ATHENA_DRIVE_CONTROLLERS__FRONT_ACKERMANN_CONTROLLER_HPP_
+#define ATHENA_DRIVE_CONTROLLERS__FRONT_ACKERMANN_CONTROLLER_HPP_
 
 #include <memory>
 #include <string>
@@ -21,7 +21,7 @@
 #include <deque>
 
 #include "controller_interface/controller_interface.hpp"
-#include <drive_controllers/single_ackermann_controller_parameters.hpp>
+#include <drive_controllers/front_ackermann_controller_parameters.hpp>
 #include "athena_drive_controllers/visibility_control.h"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
@@ -35,11 +35,11 @@
 namespace drive_controllers
 {
 
-class SingleAckermannController : public controller_interface::ControllerInterface
+class FrontAckermannController : public controller_interface::ControllerInterface
 {
 public:
   ATHENA_DRIVE_CONTROLLERS__VISIBILITY_PUBLIC
-  SingleAckermannController();
+  FrontAckermannController();
 
   ATHENA_DRIVE_CONTROLLERS__VISIBILITY_PUBLIC
   controller_interface::CallbackReturn on_init() override;
@@ -69,8 +69,8 @@ public:
   using ControllerReferenceMsg = geometry_msgs::msg::TwistStamped;
 
 protected:
-  std::shared_ptr<single_ackermann_controller::ParamListener> param_listener_;
-  single_ackermann_controller::Params params_;
+  std::shared_ptr<front_ackermann_controller::ParamListener> param_listener_;
+  front_ackermann_controller::Params params_;
 
   std::vector<std::string> drive_joint_names_;
   std::vector<std::string> steer_joint_names_;
@@ -105,4 +105,4 @@ private:
 
 }  // namespace drive_controllers
 
-#endif  // ATHENA_DRIVE_CONTROLLERS__SINGLE_ACKERMANN_CONTROLLER_HPP_
+#endif  // ATHENA_DRIVE_CONTROLLERS__FRONT_ACKERMANN_CONTROLLER_HPP_

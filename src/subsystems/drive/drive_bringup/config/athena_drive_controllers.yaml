@@ -29,8 +29,8 @@ controller_manager:
     ackermann_steering_controller:
       type: ackermann_steering_controller/AckermannSteeringController
 
-    single_ackermann_controller:
-      type: athena_drive_controllers/SingleAckermannController
+    front_ackermann_controller:
+      type: athena_drive_controllers/FrontAckermannController
     
     drive_velocity_controller:
       type: velocity_controllers/JointGroupVelocityController
@@ -48,7 +48,12 @@ controller_manager:
     # Killswitch GPIO Controller
     killswitch_gpio_controller:
       type: gpio_controllers/GpioCommandController
+
+    motor_status_broadcaster:
+      type: general_controllers/MotorStatusBroadcaster
     
+    rear_ackermann_controller:
+      type: athena_drive_controllers/RearAckermannController
 
 ackermann_steering_controller:
   # unsure why but ackermann controller only goes about half of scale_linear.x in teleop_twist
@@ -64,7 +69,7 @@ ackermann_steering_controller:
     rear_wheels_radius: 0.254
     use_stamped_vel: true
 
-single_ackermann_controller:
+front_ackermann_controller:
   ros__parameters:
     drive_joints:
       - "propulsion_fl_joint"
@@ -139,3 +144,35 @@ killswitch_gpio_controller:
           - kill_main_sent
           - kill_jetson_sent
           - is_connected
+
+motor_status_broadcaster:
+  ros__parameters:
+    joints:
+      - propulsion_fl_joint
+      - propulsion_fr_joint
+      - propulsion_bl_joint
+      - propulsion_br_joint
+    interfaces:
+      - motor_temperature
+      - torque_current
+    publish_rate: 10.0
+
+
+rear_ackermann_controller:
+  ros__parameters:
+    steer_joints:
+      - "steer_fl_joint"
+      - "steer_fr_joint"
+      - "steer_bl_joint"
+      - "steer_br_joint"
+    drive_joints:
+      - "propulsion_fl_joint"
+      - "propulsion_fr_joint"
+      - "propulsion_bl_joint"
+      - "propulsion_br_joint"
+    wheelbase: 0.8382
+    track_width: 0.645
+    wheel_radius: 0.125
+    max_speed: 0.59
+    max_steer_angle: 1.047
+    use_front_blend: false

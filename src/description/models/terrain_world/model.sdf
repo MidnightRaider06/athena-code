@@ -9,17 +9,6 @@
             <uri>model://terrain_world/meshes/terrain.dae</uri>
           </mesh>
         </geometry>
-        <!-- <material>
-          <script>
-            <uri>model://terrain/meshes/scripts</uri>
-            <name>RepeatedSand/Diffuse</name>
-          </script> 
-        </material> -->
-        <material>
-          <ambient>0.85 0.76 0.52 1</ambient>
-          <diffuse>0.85 0.76 0.52 1</diffuse>
-          <specular>0.0 0.0 0.0 1</specular>
-        </material>
         
       </visual>
       <collision name="terrain_world_collision">
