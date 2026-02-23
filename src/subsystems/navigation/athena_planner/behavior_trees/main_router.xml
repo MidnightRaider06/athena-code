@@ -8,7 +8,7 @@
   <BehaviorTree ID="MainTree">
     <PipelineSequence name="ModeRouter">
 
-      <NavSelector topic_name="/nav_mode" default_nav_mode="GNSS" nav_mode="{nav_mode}" />
+      <NavSelector topic_name="/nav_mode" default_nav_mode="ArucoDetection" nav_mode="{nav_mode}" />
 
       <ReactiveFallback name="SelectMode">
 
@@ -21,7 +21,10 @@
         </BlackboardCheckString>
 
         <BlackboardCheckString value_A="{nav_mode}" value_B="ArucoDetection" return_on_mismatch="FAILURE">
-          <SubTree ID="ArucoDetectionNavigation" __shared_blackboard="true" />
+          <Sequence name="GNSSThenAruco">
+            <SubTree ID="GNSSNavigation" goal="{goal}" path="{path}" __shared_blackboard="true"/>
+            <SubTree ID="ArucoDetectionNavigation" __shared_blackboard="true"/>
+          </Sequence>
         </BlackboardCheckString>
 
         <!-- Default fallback -->
