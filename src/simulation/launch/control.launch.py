@@ -14,7 +14,7 @@ def generate_launch_description():
     ackermann_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=['ackermann_steering_controller'],
+        arguments=['rear_ackermann_controller'],
         output='screen',
         remappings=[
         ("/ackermann_steering_controller/tf_odometry", "/tf"),

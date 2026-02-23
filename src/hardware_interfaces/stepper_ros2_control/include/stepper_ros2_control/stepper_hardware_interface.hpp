@@ -107,6 +107,10 @@ private:
   std::vector<double> joint_command_position_;
   std::vector<double> joint_command_velocity_;
 
+  // Telemetry data from CAN responses
+  std::vector<double> motor_temperature_;    // Motor temperature in °C
+  std::vector<double> motor_torque_current_; // Motor torque current in A
+
   double encoder_position;
   double motor_velocity;
   double motor_position;

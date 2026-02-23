@@ -46,10 +46,20 @@ Source of this file are templates in
 </library>
 
 <library path="drive_controllers">
-	<class name="athena_drive_controllers/SingleAckermannController"
-		   type="drive_controllers::SingleAckermannController" base_class_type="controller_interface::ControllerInterface">
+	<class name="athena_drive_controllers/FrontAckermannController"
+		   type="drive_controllers::FrontAckermannController" base_class_type="controller_interface::ControllerInterface">
 		<description>
-			Single Ackermann steering controller for athena drive.
+			Front Ackermann steering controller for athena drive.
+		</description>
+	</class>
+</library>
+
+<library path="drive_controllers">
+	<class name="athena_drive_controllers/RearAckermannController"
+		   type="drive_controllers::RearAckermannController" base_class_type="controller_interface::ControllerInterface">
+		<description>
+			Rear Ackermann controller: rear wheels swerve/steer with Ackermann arc speeds;
+			front wheels use pure Ackermann arc speed with no steering angle change.
 		</description>
 	</class>
 </library>

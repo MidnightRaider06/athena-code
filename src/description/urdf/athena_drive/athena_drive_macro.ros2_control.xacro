@@ -111,14 +111,16 @@
   
 
   <joint name="${prefix}propulsion_br_joint">
+    <command_interface name="velocity"/>
     <state_interface name="position">
       <param name="initial_value">0.0</param>
     </state_interface>
     <state_interface name="velocity"/>
   </joint>
-  
+
 
   <joint name="${prefix}propulsion_bl_joint">
+    <command_interface name="velocity"/>
     <state_interface name="position">
       <param name="initial_value">0.0</param>
     </state_interface>

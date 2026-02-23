@@ -40,6 +40,9 @@ controller_manager:
     laser_gpio_controller:
       type: gpio_controllers/GpioCommandController
 
+    motor_status_broadcaster:
+      type: general_controllers/MotorStatusBroadcaster
+
 joint_group_position_controller:                
   ros__parameters:
     joints:
@@ -113,3 +116,15 @@ laser_gpio_controller:
           - laser_state
           - temperature
           - is_connected
+
+motor_status_broadcaster:
+  ros__parameters:
+    joints:
+      - stepper_motor_a
+      - stepper_motor_b
+      - talon_lift
+      - talon_scoop
+    interfaces:
+      - motor_temperature
+      - torque_current
+    publish_rate: 10.0

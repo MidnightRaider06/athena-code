@@ -1,5 +1,5 @@
-# Parameters for the SingleAckermannController
-single_ackermann_controller:
+# Parameters for the FrontAckermannController
+front_ackermann_controller:
   drive_joints: {
     type: string_array,
     default_value: [],

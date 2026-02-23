@@ -16,6 +16,9 @@ controller_manager:
 
     manual_arm_joint_by_joint_controller:
       type: arm_controllers/ManualArmJointByJointController
+
+    motor_status_broadcaster:
+      type: general_controllers/MotorStatusBroadcaster
     
 
 joint_trajectory_controller:
@@ -118,3 +121,16 @@ manual_arm_joint_by_joint_controller:
       - 0.785398
       - 0.005       # TODO: Find this
       - 0.03        # Actuator max displacement
+
+motor_status_broadcaster:
+  ros__parameters:
+    joints:
+      - base_yaw
+      - shoulder_pitch
+      - elbow_pitch
+      - wrist_pitch
+      - wrist_roll
+    interfaces:
+      - motor_temperature
+      - torque_current
+    publish_rate: 10.0

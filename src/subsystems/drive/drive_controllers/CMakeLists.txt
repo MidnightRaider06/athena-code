@@ -46,9 +46,13 @@ generate_parameter_library(crab_steering_controller_parameters
   include/athena_drive_controllers/validate_drive_controller_parameters.hpp
 )
 
-generate_parameter_library(single_ackermann_controller_parameters
-  config/single_ackermann_controller.yaml
+generate_parameter_library(front_ackermann_controller_parameters
+  config/front_ackermann_controller.yaml
   include/athena_drive_controllers/validate_drive_controller_parameters.hpp
+)
+
+generate_parameter_library(rear_ackermann_controller_parameters
+  config/rear_ackermann_controller.yaml
 )
 
 add_library(
@@ -56,12 +60,13 @@ add_library(
   SHARED
   src/swerve_drive_controller.cpp
   src/double_ackermann_controller.cpp
-  src/single_ackermann_controller.cpp
+  src/front_ackermann_controller.cpp
+  src/rear_ackermann_controller.cpp
 )
 target_include_directories(drive_controllers PUBLIC
   "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(drive_controllers swerve_drive_controller_parameters double_ackermann_controller_parameters crab_steering_controller_parameters single_ackermann_controller_parameters)
+target_link_libraries(drive_controllers swerve_drive_controller_parameters double_ackermann_controller_parameters crab_steering_controller_parameters front_ackermann_controller_parameters rear_ackermann_controller_parameters)
 ament_target_dependencies(drive_controllers ${THIS_PACKAGE_INCLUDE_DEPENDS})
 target_compile_definitions(drive_controllers PRIVATE "SWERVE_DRIVE_CONTROLLER_BUILDING_DLL")
 
