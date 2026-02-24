@@ -61,9 +61,6 @@ def generate_launch_description():
         [pkg_sim, 'launch', 'control.launch.py'])
     ground_truth_tf_launch = PathJoinSubstitution(
         [pkg_sim, 'launch', 'ground_truth_tf.launch.py'])
-    aruco_launch = PathJoinSubstitution(
-        [pkg_sim, 'launch', 'aruco.launch.py']
-    )
 
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([gazebo_launch]),
@@ -95,20 +92,11 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('publish_ground_truth_tf'))
     )
 
-    aruco = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([aruco_launch]),
-        launch_arguments=[
-        ('sim', LaunchConfiguration('use_sim_time')),
-        ('marker_size', '0.5')
-        ]
-    )
-
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(gazebo)
     ld.add_action(robot_spawn)
     ld.add_action(bridge)
     ld.add_action(control)
     ld.add_action(ground_truth_tf)
-    ld.add_action(aruco)
     
     return ld
