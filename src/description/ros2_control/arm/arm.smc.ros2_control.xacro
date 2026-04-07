@@ -4,7 +4,7 @@
     <ros2_control name="${name}" type="system">
       <hardware>
         <plugin>smc_ros2_control/SMCHardwareInterface</plugin>
-        <param name="update_rate">2</param> <!-- Hz -->
+        <param name="update_rate">10</param> <!-- Hz -->
         <param name="logger_rate">5</param> <!-- Hz -->
         <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
         <param name="can_interface">can0</param>

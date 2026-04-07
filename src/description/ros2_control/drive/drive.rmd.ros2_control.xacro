@@ -4,7 +4,7 @@
     <ros2_control name="${name}" type="system">
       <hardware>
         <plugin>rmd_ros2_control/RMDHardwareInterface</plugin>
-        <param name="update_rate">30</param> <!-- Hz -->
+        <param name="update_rate">10</param> <!-- Hz -->
         <param name="logger_rate">5</param> <!-- Hz -->
         <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
         <param name="can_interface">can0</param>
@@ -24,7 +24,7 @@
       </joint>
       
       <joint name="propulsion_fr_joint">
-        <param name="node_id">0x149</param>
+        <param name="node_id">0x145</param>
         <param name="gear_ratio">1</param>
         <param name="joint_orientation">1.0</param>
         <param name="operating_velocity">150</param> <!-- motor dps -->
@@ -37,7 +37,7 @@
       </joint>
 
       <joint name="propulsion_bl_joint">
-        <param name="node_id">0x141</param>
+        <param name="node_id">0x144</param>
         <param name="gear_ratio">1</param>
         <param name="joint_orientation">-1.0</param>
         <param name="operating_velocity">150</param> <!-- motor dps -->
@@ -50,7 +50,7 @@
       </joint>
       
       <joint name="propulsion_br_joint">
-        <param name="node_id">0x143</param>
+        <param name="node_id">0x141</param>
         <param name="gear_ratio">1</param>
         <param name="joint_orientation">1.0</param>
         <param name="operating_velocity">150</param> <!-- motor dps -->

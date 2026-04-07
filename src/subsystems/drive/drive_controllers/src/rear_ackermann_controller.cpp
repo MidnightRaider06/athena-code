@@ -15,19 +15,18 @@
 #include "athena_drive_controllers/rear_ackermann_controller.hpp"
 
 #include <algorithm>
-#include <cmath>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
+#include <cmath>
 
 #include "controller_interface/helpers.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace drive_controllers
 {
-
-RearAckermannController::RearAckermannController()
-: controller_interface::ControllerInterface() {}
+RearAckermannController::RearAckermannController() : controller_interface::ControllerInterface() {}
 
 controller_interface::CallbackReturn RearAckermannController::on_init()
 {
@@ -48,8 +47,8 @@ controller_interface::CallbackReturn RearAckermannController::on_configure(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
   params_ = param_listener_->get_params();
-  steer_joint_names_ = params_.steer_joints;  // [fl, fr, bl, br]
-  drive_joint_names_ = params_.drive_joints;  // [fl, fr, bl, br]
+  drive_joint_names_ = params_.drive_joints;
+  steer_joint_names_ = params_.steer_joints;
 
   auto subscribers_qos = rclcpp::SystemDefaultsQoS();
   subscribers_qos.keep_last(1);
@@ -65,55 +64,52 @@ controller_interface::CallbackReturn RearAckermannController::on_configure(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
-void RearAckermannController::reference_callback(
-  const std::shared_ptr<ControllerReferenceMsg> msg)
+void RearAckermannController::reference_callback(const std::shared_ptr<ControllerReferenceMsg> msg)
 {
   input_ref_.writeFromNonRT(msg);
 }
 
-controller_interface::InterfaceConfiguration
-RearAckermannController::command_interface_configuration() const
+controller_interface::InterfaceConfiguration RearAckermannController::command_interface_configuration() const
 {
-  controller_interface::InterfaceConfiguration config;
-  config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
+  controller_interface::InterfaceConfiguration command_interfaces_config;
+  command_interfaces_config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
 
-  // Steer interfaces: [fl, fr, bl, br] / position
-  for (const auto & joint : steer_joint_names_) {
-    config.names.push_back(joint + "/position");
+  for (const auto & joint : steer_joint_names_)
+  {
+    command_interfaces_config.names.push_back(joint + "/position");
   }
-  // Drive interfaces: [fl, fr, bl, br] / velocity
-  for (const auto & joint : drive_joint_names_) {
-    config.names.push_back(joint + "/velocity");
+  for (const auto & joint : drive_joint_names_)
+  {
+    command_interfaces_config.names.push_back(joint + "/velocity");
   }
 
-  return config;
+  return command_interfaces_config;
 }
 
-controller_interface::InterfaceConfiguration
-RearAckermannController::state_interface_configuration() const
+controller_interface::InterfaceConfiguration RearAckermannController::state_interface_configuration() const
 {
-  controller_interface::InterfaceConfiguration config;
-  config.type = controller_interface::interface_configuration_type::NONE;
-  return config;
+  controller_interface::InterfaceConfiguration state_interfaces_config;
+  state_interfaces_config.type = controller_interface::interface_configuration_type::NONE;
+  return state_interfaces_config;
 }
 
 controller_interface::CallbackReturn RearAckermannController::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  for (size_t i = 0; i < command_interfaces_.size(); ++i) {
+  for (size_t i = 0; i < command_interfaces_.size(); ++i)
+  {
     command_interfaces_[i].set_value(0.0);
   }
 
-  RCLCPP_INFO(
-    get_node()->get_logger(),
-    "RearAckermannController activated with all commands set to zero");
+  RCLCPP_INFO(get_node()->get_logger(), "RearAckermannController activated with all commands set to zero");
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
 controller_interface::CallbackReturn RearAckermannController::on_deactivate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  for (size_t i = 0; i < command_interfaces_.size(); ++i) {
+  for (size_t i = 0; i < command_interfaces_.size(); ++i)
+  {
     command_interfaces_[i].set_value(0.0);
   }
 
@@ -124,120 +120,111 @@ controller_interface::return_type RearAckermannController::update(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
   auto current_ref = input_ref_.readFromRT();
-  if (!current_ref || !(*current_ref)) {
-    for (size_t i = 0; i < command_interfaces_.size(); ++i) {
+  if (!current_ref || !(*current_ref))
+  {
+    for (size_t i = 0; i < command_interfaces_.size(); ++i)
+    {
       command_interfaces_[i].set_value(0.0);
     }
     return controller_interface::return_type::OK;
   }
 
-  const double v = std::clamp(
+  double linear_vel_cmd = std::clamp(
     (*current_ref)->twist.linear.x, -params_.max_speed, params_.max_speed);
-  const double omega = (*current_ref)->twist.angular.z;
 
-  const double wheelbase    = params_.wheelbase;
-  const double track_width  = params_.track_width;
-  const double wheel_radius = params_.wheel_radius;
-  const double half_base    = wheelbase / 2.0;
-  const double half_track   = track_width / 2.0;
+  // Bicycle model: same formula as front steering — sign of steer_cmd determines left vs right
+  double steer_cmd = 0.0;
+  if (std::abs(linear_vel_cmd) > 1e-4) {
+    steer_cmd = std::atan((*current_ref)->twist.angular.z * params_.wheelbase / linear_vel_cmd);
+  }
+  //steer_cmd = std::clamp(steer_cmd, -params_.max_steer_angle, params_.max_steer_angle);
 
-  // command_interfaces_ layout:
-  //   [0] steer_bl / position  ← rear swerve angle
-  //   [1] steer_br / position  ← rear swerve angle
-  //   [2] propulsion_fl / velocity  ← front Ackermann arc speed
-  //   [3] propulsion_fr / velocity  ← front Ackermann arc speed
-  //   [4] propulsion_bl / velocity  ← rear Ackermann arc speed
-  //   [5] propulsion_br / velocity  ← rear Ackermann arc speed
+  double wheelbase = params_.wheelbase;
+  double track_width = params_.track_width;
+  double wheel_radius = params_.wheel_radius;
 
-  if (std::abs(v) < 1e-4) {
-    // Zero linear velocity: zero all propulsion and return steer to 0
-    for (size_t i = 0; i < command_interfaces_.size(); ++i) {
-      command_interfaces_[i].set_value(0.0);
+  double rear_left_steer_angle = 0.0;
+  double rear_right_steer_angle = 0.0;
+
+  double front_left_vel = linear_vel_cmd;
+  double front_right_vel = linear_vel_cmd;
+  double rear_left_vel = linear_vel_cmd;
+  double rear_right_vel = linear_vel_cmd;
+
+  if (std::abs(steer_cmd) > 1e-4) {
+    double turn_radius = wheelbase / std::tan(steer_cmd);
+    double angular_vel = std::abs(linear_vel_cmd) / std::abs(turn_radius);
+
+    if (linear_vel_cmd < 0) {
+      angular_vel = -angular_vel;
     }
-    return controller_interface::return_type::OK;
+
+    double inner_angle = std::atan(wheelbase / (std::abs(turn_radius) - track_width / 2.0));
+    double outer_angle = std::atan(wheelbase / (std::abs(turn_radius) + track_width / 2.0));
+
+    // Rear axle is the steered axle: it traces the longer (front) arc
+    // Front axle is the fixed axle: it traces the shorter (rear) arc
+    // Steer angles are negated vs front steering: rear wheels point right to turn left
+    double inner_rear_vel = angular_vel * (std::abs(turn_radius) - track_width / 2.0);
+    double outer_rear_vel = angular_vel * (std::abs(turn_radius) + track_width / 2.0);
+    double inner_front_vel = angular_vel * std::sqrt(
+      std::pow(wheelbase, 2) + std::pow(std::abs(turn_radius) - track_width / 2.0, 2));
+    double outer_front_vel = angular_vel * std::sqrt(
+      std::pow(wheelbase, 2) + std::pow(std::abs(turn_radius) + track_width / 2.0, 2));
+
+    if (steer_cmd > 0.0) {  // LEFT TURN: left wheel is INNER
+      rear_left_steer_angle = inner_angle;
+      rear_right_steer_angle = outer_angle;
+
+      front_left_vel = inner_rear_vel;
+      front_right_vel = outer_rear_vel;
+      rear_left_vel = inner_front_vel;
+      rear_right_vel = outer_front_vel;
+
+    } else {  // RIGHT TURN: right wheel is INNER
+      rear_left_steer_angle = -outer_angle;
+      rear_right_steer_angle = -inner_angle;
+
+      front_left_vel = outer_rear_vel;
+      front_right_vel = inner_rear_vel;
+      rear_left_vel = outer_front_vel;
+      rear_right_vel = inner_front_vel;
+    }
   }
 
-  if (std::abs(omega) < 1e-4) {
-    // Straight line: all steer = 0, all drive = v / r
-    const double drive_ang = v / wheel_radius;
-    command_interfaces_[0].set_value(0.0);
-    command_interfaces_[1].set_value(0.0);
-    command_interfaces_[2].set_value(drive_ang);
-    command_interfaces_[3].set_value(drive_ang);
-    command_interfaces_[4].set_value(drive_ang);
-    command_interfaces_[5].set_value(drive_ang);
+  double fl_wheel_ang_vel = front_left_vel / wheel_radius;
+  double fr_wheel_ang_vel = front_right_vel / wheel_radius;
+  double rl_wheel_ang_vel = rear_left_vel / wheel_radius;
+  double rr_wheel_ang_vel = rear_right_vel / wheel_radius;
 
-    const double rad_s_to_rpm = 60.0 / (2.0 * M_PI);
-    RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(), 500,
-      "Wheel speeds [RPM] - FL: %.2f, FR: %.2f, RL: %.2f, RR: %.2f",
-      drive_ang * rad_s_to_rpm,
-      drive_ang * rad_s_to_rpm,
-      drive_ang * rad_s_to_rpm,
-      drive_ang * rad_s_to_rpm);
-    return controller_interface::return_type::OK;
-  }
+  // Set steering positions (rear wheels)
 
-  // ── Turn geometry (mid-vehicle ICR, consistent with double_ackermann_controller) ──
-  //
-  // ICR is at lateral distance R = v / omega from the vehicle centreline,
-  // centred between the axles.  Left-hand turns have R > 0.
-  //
-  // Guard: clamp |turn_radius| to at least (half_track + 0.05 m).
-  // If the ICR falls inside the wheel track, r_left or r_right changes sign,
-  // causing a swerve wheel to drive backward and producing erratic behavior
-  // at low linear speed with higher angular velocity.
-  const double min_turn_radius = half_track + 0.05;
-  const double turn_radius = std::copysign(
-    std::max(std::abs(v / omega), min_turn_radius), v / omega);  // R  (signed)
-  const double r_left      = turn_radius - half_track;           // R − T/2
-  const double r_right     = turn_radius + half_track;           // R + T/2
+  double rear_left_angle_clamped = std::clamp(rear_left_steer_angle, -params_.max_steer_angle, params_.max_steer_angle);
+  double rear_right_angle_clamped = -1* std::clamp(rear_right_steer_angle, -params_.max_steer_angle, params_.max_steer_angle);
 
-  // ── Rear wheels: swerve (steer + Ackermann arc speed) ───────────────────
-  //
-  // Steer angle: rear wheels counter-steer relative to what front wheels would do.
-  // angle = -atan(half_base / r_side): legs of the right triangle are the longitudinal
-  // offset (half_base) and the lateral ICR distance (r_side), so atan is correct here.
-  const double rear_left_steer  = std::clamp(
-    std::atan(half_base / r_right), params_.min_steering_angle, params_.max_steering_angle);
-  const double rear_right_steer = std::clamp(
-    std::atan(half_base / r_left), params_.min_steering_angle, params_.max_steering_angle);
 
-  // Arc speed: r * omega (signed — correct for forward and reverse)
-  // Clamp to max_speed so extreme omega values can't over-command the motors.
-  const double max_wheel_ang_vel = params_.max_speed / wheel_radius;
-  const double rear_left_vel  = std::clamp(
-    (r_left  * omega) / wheel_radius, -max_wheel_ang_vel, max_wheel_ang_vel);
-  const double rear_right_vel = std::clamp(
-    (r_right * omega) / wheel_radius, -max_wheel_ang_vel, max_wheel_ang_vel);
 
-  // ── Front wheels: pure Ackermann arc speed ───────────────────────────────
-  //
-  // The front steer joints are held at 0, so the kinematically correct roll
-  // speed is r_side * omega / r_w.  The inner wheel transitions from forward
-  // to backward only when |R| < half_track (very tight turns).
-  const double front_left_vel  = std::clamp(
-    (r_left  * omega) / wheel_radius, -max_wheel_ang_vel, max_wheel_ang_vel);
-  const double front_right_vel = std::clamp(
-    (r_right * omega) / wheel_radius, -max_wheel_ang_vel, max_wheel_ang_vel);
+  command_interfaces_[0].set_value(rear_left_angle_clamped);
+  command_interfaces_[1].set_value(rear_right_angle_clamped);
 
-  command_interfaces_[0].set_value(rear_left_steer);
-  command_interfaces_[1].set_value(rear_right_steer);
-  command_interfaces_[2].set_value(front_left_vel);
-  command_interfaces_[3].set_value(front_right_vel);
-  command_interfaces_[4].set_value(rear_left_vel);
-  command_interfaces_[5].set_value(rear_right_vel);
+  // Set drive velocities
+  command_interfaces_[2].set_value(fl_wheel_ang_vel);
+  command_interfaces_[3].set_value(fr_wheel_ang_vel);
+  command_interfaces_[4].set_value(rl_wheel_ang_vel);
+  command_interfaces_[5].set_value(rr_wheel_ang_vel);
 
   const double rad_s_to_rpm = 60.0 / (2.0 * M_PI);
   RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(), 500,
-    "Wheel speeds [RPM] - FL: %.2f, FR: %.2f, RL: %.2f, RR: %.2f",
-    front_left_vel * rad_s_to_rpm,
-    front_right_vel * rad_s_to_rpm,
-    rear_left_vel * rad_s_to_rpm,
-    rear_right_vel * rad_s_to_rpm);
+    "Wheel speeds [RPM] - FL: %.2f, FR: %.2f, RL: %.2f, RR: %.2f | Steer [rad] - RL: %.3f, RR: %.3f",
+    fl_wheel_ang_vel * rad_s_to_rpm,
+    fr_wheel_ang_vel * rad_s_to_rpm,
+    rl_wheel_ang_vel * rad_s_to_rpm,
+    rr_wheel_ang_vel * rad_s_to_rpm,
+    rear_left_angle_clamped,
+    rear_right_angle_clamped);
 
   return controller_interface::return_type::OK;
 }
-
 }  // namespace drive_controllers
 
 #include "pluginlib/class_list_macros.hpp"

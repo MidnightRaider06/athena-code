@@ -10,8 +10,8 @@ https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/master/etc/cyclo
         </General>
         <Discovery>
             <Peers>
-                <Peer address="192.168.1.12"/>
-                <Peer address="192.168.1.1"/>
+                <Peer address="192.168.88.90"/>
+                <Peer address="192.168.88.10"/>
             </Peers>
             <ParticipantIndex>auto</ParticipantIndex>
             <MaxAutoParticipantIndex>1000</MaxAutoParticipantIndex>

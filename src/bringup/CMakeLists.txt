@@ -17,9 +17,10 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/config)
 endif()
 
 # Install controller_switcher script from bringup package if present
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/controller_switcher.py)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/controller_switcher.py OR ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cmd_vel_to_rmd.py)
   install(PROGRAMS
     scripts/controller_switcher.py
+    scripts/cmd_vel_to_rmd.py
     DESTINATION lib/${PROJECT_NAME}
   )
 endif()
