@@ -18,15 +18,16 @@ class ArUcoNode(Node):
         super().__init__('aruco_node')
 
         self.declare_parameter('marker_size', 0.2)
+        self.declare_parameter('image_topic', '/zed/zed_node/left/image_rect_color')
+        self.declare_parameter('camera_info_topic', '/zed/zed_node/left/camera_info')
 
         sim = self.get_parameter('use_sim_time').get_parameter_value().bool_value
         self.marker_size_ = self.get_parameter('marker_size').get_parameter_value().double_value
+        image_topic = self.get_parameter('image_topic').get_parameter_value().string_value
+        camera_info_topic = self.get_parameter('camera_info_topic').get_parameter_value().string_value
 
         if sim:
             self.marker_size_ = 0.50
-
-        image_topic = '/zed/zed_node/left/image_rect_color'
-        camera_info_topic = '/zed/zed_node/left/camera_info'
 
         self.get_logger().info(f'sim={"true" if sim else "false"}')
         self.get_logger().info(f'marker_size={self.marker_size_:.3f} meters')
@@ -35,9 +36,9 @@ class ArUcoNode(Node):
 
         self.aruco_dict_ = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
         try:
-            self.aruco_params_ = cv2.aruco.DetectorParameters_create()
+            self.aruco_params_ = cv2.aruco.DetectorParameters_create() # OpenCV 4.5.x
         except AttributeError:
-            self.aruco_params_ = cv2.aruco.DetectorParameters()
+            self.aruco_params_ = cv2.aruco.DetectorParameters() # OpenCV 4.7.x and later
 
         self.tf_buffer_ = tf2_ros.Buffer()
         self.tf_listener_ = tf2_ros.TransformListener(self.tf_buffer_, self)
@@ -140,43 +141,6 @@ class ArUcoNode(Node):
         self.rvec_ = rvecs[0]
         self.tvec_ = tvecs[0]
 
-        # Convert rotation vector to rotation matrix (mirrors C++ behavior; result
-        # not used in the published pose — orientation comes from TF below)
-        rotation_matrix, _ = cv2.Rodrigues(self.rvec_)
-        rotation_matrix = rotation_matrix.astype(np.float64)
-
-        trace = rotation_matrix[0, 0] + rotation_matrix[1, 1] + rotation_matrix[2, 2]
-        if trace > 0:
-            s = 0.5 / np.sqrt(trace + 1.0)
-            _w = 0.25 / s
-            _x = (rotation_matrix[2, 1] - rotation_matrix[1, 2]) * s
-            _y = (rotation_matrix[0, 2] - rotation_matrix[2, 0]) * s
-            _z = (rotation_matrix[1, 0] - rotation_matrix[0, 1]) * s
-        elif (rotation_matrix[0, 0] > rotation_matrix[1, 1] and
-              rotation_matrix[0, 0] > rotation_matrix[2, 2]):
-            s = 2.0 * np.sqrt(
-                1.0 + rotation_matrix[0, 0] - rotation_matrix[1, 1] - rotation_matrix[2, 2])
-            _w = (rotation_matrix[2, 1] - rotation_matrix[1, 2]) / s
-            _x = 0.25 * s
-            _y = (rotation_matrix[0, 1] + rotation_matrix[1, 0]) / s
-            _z = (rotation_matrix[0, 2] + rotation_matrix[2, 0]) / s
-        elif rotation_matrix[1, 1] > rotation_matrix[2, 2]:
-            s = 2.0 * np.sqrt(
-                1.0 + rotation_matrix[1, 1] - rotation_matrix[0, 0] - rotation_matrix[2, 2])
-            _w = (rotation_matrix[0, 2] - rotation_matrix[2, 0]) / s
-            _x = (rotation_matrix[0, 1] + rotation_matrix[1, 0]) / s
-            _y = 0.25 * s
-            _z = (rotation_matrix[1, 2] + rotation_matrix[2, 1]) / s
-        else:
-            s = 2.0 * np.sqrt(
-                1.0 + rotation_matrix[2, 2] - rotation_matrix[0, 0] - rotation_matrix[1, 1])
-            _w = (rotation_matrix[1, 0] - rotation_matrix[0, 1]) / s
-            _x = (rotation_matrix[0, 2] + rotation_matrix[2, 0]) / s
-            _y = (rotation_matrix[1, 2] + rotation_matrix[2, 1]) / s
-            _z = 0.25 * s
-        norm = np.sqrt(_x * _x + _y * _y + _z * _z + _w * _w)
-        _x, _y, _z, _w = _x / norm, _y / norm, _z / norm, _w / norm  # noqa: F841
-
         pose_camera = PoseStamped()
         pose_camera.header.stamp = msg.header.stamp
         pose_camera.header.frame_id = msg.header.frame_id
@@ -193,10 +157,6 @@ class ArUcoNode(Node):
         try:
             pose_camera.header.stamp = Time().to_msg()
             pose_map = self.tf_buffer_.transform(pose_camera, 'map', timeout=Duration(seconds=0.1))
-            # Stamp with this node's clock so the pose is on the same clock as bt_navigator.
-            # Both nodes receive the same use_sim_time from the launch hierarchy.
-            # The TF transform's own header.stamp is unreliable — the chain can have
-            # mixed-clock publishers (Gazebo plugins vs localizer) giving wrong timestamps.
             pose_map.header.stamp = self.get_clock().now().to_msg()
 
             tf_map_base = self.tf_buffer_.lookup_transform(
