@@ -7,7 +7,7 @@ teleop_twist_joy:
     axis_linear.z: -1
 
     # unsure why but ackermann controller only goes about half this speed
-    scale_linear.x: 2.0
+    scale_linear.x: 0.59
     scale_linear.y: 0.0
     scale_linear.z: 0.0
 

@@ -30,17 +30,6 @@
 namespace drive_controllers
 {
 
-// RearAckermannController: rear axle steers with Ackermann geometry; front axle uses
-// pure Ackermann arc speeds with wheels pointing straight.
-//
-//   Rear axle  — swerve/steer: rear joints angle toward the ICR (Ackermann counter-steer
-//                geometry) and spin at the Ackermann arc speed r * omega.
-//
-//   Front axle — wheels held at 0 (pointing straight); drive speeds use pure
-//                Ackermann arc speed (r_side * omega / r_w).
-//
-// ICR reference point: mid-vehicle (wheelbase / 2 ahead of rear axle), consistent with
-// double_ackermann_controller.
 class RearAckermannController : public controller_interface::ControllerInterface
 {
 public:
@@ -78,8 +67,8 @@ protected:
   std::shared_ptr<rear_ackermann_controller::ParamListener> param_listener_;
   rear_ackermann_controller::Params params_;
 
-  std::vector<std::string> steer_joint_names_;  // [bl, br]
-  std::vector<std::string> drive_joint_names_;  // [fl, fr, bl, br]
+  std::vector<std::string> drive_joint_names_;
+  std::vector<std::string> steer_joint_names_;
 
   rclcpp::Subscription<ControllerReferenceMsg>::SharedPtr ref_subscriber_ = nullptr;
   realtime_tools::RealtimeBuffer<std::shared_ptr<ControllerReferenceMsg>> input_ref_;
