@@ -9,6 +9,11 @@ ARGUMENTS = [
         default_value='0.2',
         description='Size of ArUco marker in meters'
     ),
+    DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='false',
+        description='Use simulation clock if true'
+    ),
 ]
 
 def generate_launch_description():
