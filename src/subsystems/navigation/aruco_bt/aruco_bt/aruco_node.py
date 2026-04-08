@@ -8,9 +8,10 @@ from rclpy.duration import Duration
 from rclpy.time import Time
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PoseStamped
+from vision_msgs.msg import Detection2D, BoundingBox2D, ObjectHypothesisWithPose
 from cv_bridge import CvBridge
 import tf2_ros
-import tf2_geometry_msgs  # noqa: F401 — registers PoseStamped transform support
+import tf2_geometry_msgs
 
 
 class ArUcoNode(Node):
@@ -34,11 +35,9 @@ class ArUcoNode(Node):
         self.get_logger().info(f'Subscribing to image feed: {image_topic}')
         self.get_logger().info(f'Subscribing to camera info: {camera_info_topic}')
 
-        self.aruco_dict_ = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-        try:
-            self.aruco_params_ = cv2.aruco.DetectorParameters_create() # OpenCV 4.5.x
-        except AttributeError:
-            self.aruco_params_ = cv2.aruco.DetectorParameters() # OpenCV 4.7.x and later
+        aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+        aruco_params = cv2.aruco.DetectorParameters()
+        self.aruco_detector_ = cv2.aruco.ArucoDetector(aruco_dict, aruco_params)
 
         self.tf_buffer_ = tf2_ros.Buffer()
         self.tf_listener_ = tf2_ros.TransformListener(self.tf_buffer_, self)
@@ -51,8 +50,7 @@ class ArUcoNode(Node):
         self.camera_info_sub_ = self.create_subscription(
             CameraInfo, camera_info_topic, self.camera_info_callback, 10)
 
-        self.image_pub_ = self.create_publisher(Image, '/aruco_annotated_img', 10)
-        self.pose_pub_ = self.create_publisher(PoseStamped, '/aruco_pose', 10)
+        self.detection_pub_ = self.create_publisher(Detection2D, '/aruco_detection', 10)
 
         self.marker_id_ = -1
         self.corners_ = []
@@ -79,43 +77,32 @@ class ArUcoNode(Node):
             self.get_logger().error(f'cv_bridge exception: {e}')
             return
 
-        frame_color = cv2.cvtColor(cv_ptr, cv2.COLOR_GRAY2BGR)
-
         self.detect_aruco_markers(cv_ptr)
 
-        if self.marker_id_ >= 0 and len(self.corners_) > 0:
-            for i in range(4):
-                start_point = (int(self.corners_[i][0]), int(self.corners_[i][1]))
-                end_point = (int(self.corners_[(i + 1) % 4][0]),
-                             int(self.corners_[(i + 1) % 4][1]))
-                cv2.line(frame_color, start_point, end_point, (0, 255, 0), 2)
+        if self.marker_id_ >= 0 and len(self.corners_) > 0 and self.camera_info_received_:
+            pose = self.estimate_pose(msg)
+            if pose is not None:
+                xs = [pt[0] for pt in self.corners_]
+                ys = [pt[1] for pt in self.corners_]
 
-            text_pos = (int(self.corners_[0][0]), int(self.corners_[0][1]) - 20)
-            label = f'id: {self.marker_id_}'
-            cv2.putText(frame_color, label, text_pos,
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                        (0, 0, 255), 2, cv2.LINE_AA)
+                detection = Detection2D()
+                detection.header.stamp = self.get_clock().now().to_msg()
+                detection.header.frame_id = 'map'
+                detection.bbox.center.position.x = float(sum(xs) / 4)
+                detection.bbox.center.position.y = float(sum(ys) / 4)
+                detection.bbox.size_x = float(max(xs) - min(xs))
+                detection.bbox.size_y = float(max(ys) - min(ys))
 
-            if self.camera_info_received_:
-                self.estimate_and_publish_pose(msg)
+                hypothesis = ObjectHypothesisWithPose()
+                hypothesis.hypothesis.class_id = str(self.marker_id_)
+                hypothesis.hypothesis.score = 1.0
+                hypothesis.pose.pose = pose
+                detection.results.append(hypothesis)
 
-                if self.rvec_ is not None and self.tvec_ is not None:
-                    try:
-                        cv2.aruco.drawAxis(frame_color, self.camera_matrix_,
-                                           self.dist_coeffs_, self.rvec_, self.tvec_,
-                                           self.marker_size_ * 0.5)
-                    except AttributeError:
-                        cv2.drawFrameAxes(frame_color, self.camera_matrix_,
-                                          self.dist_coeffs_, self.rvec_, self.tvec_,
-                                          self.marker_size_ * 0.5)
-
-        annotated_msg = self.bridge_.cv2_to_imgmsg(frame_color, 'bgr8')
-        annotated_msg.header = msg.header
-        self.image_pub_.publish(annotated_msg)
+                self.detection_pub_.publish(detection)
 
     def detect_aruco_markers(self, frame):
-        corners, ids, _ = cv2.aruco.detectMarkers(
-            frame, self.aruco_dict_, parameters=self.aruco_params_)
+        corners, ids, _ = self.aruco_detector_.detectMarkers(frame)
 
         if ids is not None and len(ids) > 0:
             self.marker_id_ = int(ids[0][0])
@@ -126,28 +113,29 @@ class ArUcoNode(Node):
             self.corners_ = []
             self.all_corners_ = []
 
-    def estimate_and_publish_pose(self, msg):
+    def estimate_pose(self, msg):
         if len(self.all_corners_) == 0:
-            return
+            return None
 
         if self.marker_size_ <= 0:
             self.get_logger().warn(f'Invalid marker_size_: {self.marker_size_:.3f}')
-            return
+            return None
 
-        rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
-            self.all_corners_, self.marker_size_,
-            self.camera_matrix_, self.dist_coeffs_)
+        half = self.marker_size_ / 2.0
+        obj_points = np.array([[-half,  half, 0],[ half,  half, 0],[ half, -half, 0],[-half, -half, 0]], dtype=np.float32)
 
-        self.rvec_ = rvecs[0]
-        self.tvec_ = tvecs[0]
+        img_points = self.all_corners_[0].reshape(4, 2)
+        _, self.rvec_, self.tvec_ = cv2.solvePnP(
+            obj_points, img_points,
+            self.camera_matrix_, self.dist_coeffs_,
+            flags=cv2.SOLVEPNP_IPPE_SQUARE)
 
         pose_camera = PoseStamped()
-        pose_camera.header.stamp = msg.header.stamp
         pose_camera.header.frame_id = msg.header.frame_id
 
         pose_camera.pose.position.x = float(self.tvec_[0][0])
-        pose_camera.pose.position.y = float(self.tvec_[0][1])
-        pose_camera.pose.position.z = float(self.tvec_[0][2])
+        pose_camera.pose.position.y = float(self.tvec_[1][0])
+        pose_camera.pose.position.z = float(self.tvec_[2][0])
 
         pose_camera.pose.orientation.x = 0.0
         pose_camera.pose.orientation.y = 0.0
@@ -157,7 +145,6 @@ class ArUcoNode(Node):
         try:
             pose_camera.header.stamp = Time().to_msg()
             pose_map = self.tf_buffer_.transform(pose_camera, 'map', timeout=Duration(seconds=0.1))
-            pose_map.header.stamp = self.get_clock().now().to_msg()
 
             tf_map_base = self.tf_buffer_.lookup_transform(
                 'map', 'base_footprint', Time(),
@@ -168,9 +155,10 @@ class ArUcoNode(Node):
             pose_map.pose.orientation.z = tf_map_base.transform.rotation.z
             pose_map.pose.orientation.w = tf_map_base.transform.rotation.w
 
-            self.pose_pub_.publish(pose_map)
+            return pose_map.pose
         except Exception as ex:
             self.get_logger().warn(f'Could not transform to map frame: {ex}')
+            return None
 
 
 def main(args=None):

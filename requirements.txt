@@ -2,4 +2,5 @@ pygame
 catkin_pkg
 empy==3.3.4
 lark
-numpy
+numpy<2.0
+opencv-contrib-python==4.10.0.84
