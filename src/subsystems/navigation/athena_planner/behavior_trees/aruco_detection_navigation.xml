@@ -2,8 +2,8 @@
   <BehaviorTree ID="ArucoDetectionNavigation">
     <ReactiveFallback>
       <Sequence>
-        <ArUcoDetected aruco_topic="/aruco_pose" timeout="5.0" />
-        <GetArucoPose aruco_topic="/aruco_pose" timeout="5.0" aruco_pose="{aruco_pose}" />
+        <ArUcoDetected aruco_topic="/aruco_detection" timeout="5.0" />
+        <GetArucoPose aruco_topic="/aruco_detection" timeout="5.0" aruco_pose="{aruco_pose}" />
 
         <RecoveryNode number_of_retries="3" name="NavWithRecovery">
           <!-- Primary attempt -->

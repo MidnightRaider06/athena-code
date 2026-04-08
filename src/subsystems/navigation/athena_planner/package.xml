@@ -22,6 +22,7 @@
   <depend>nav2_util</depend>
   <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
+  <depend>vision_msgs</depend>
 
   <exec_depend>nav2_controller</exec_depend>
   <exec_depend>nav2_smoother</exec_depend>

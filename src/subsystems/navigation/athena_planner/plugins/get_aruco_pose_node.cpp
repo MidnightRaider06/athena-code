@@ -26,7 +26,7 @@ GetArucoPose::GetArucoPose(
   rclcpp::SubscriptionOptions sub_option;
   sub_option.callback_group = callback_group_;
   
-  aruco_sub_ = node_->create_subscription<geometry_msgs::msg::PoseStamped>(
+  aruco_sub_ = node_->create_subscription<vision_msgs::msg::Detection2D>(
     topic_name_,
     10,
     std::bind(&GetArucoPose::arucoCallback, this, _1),
@@ -69,9 +69,10 @@ BT::NodeStatus GetArucoPose::tick()
 }
 
 void GetArucoPose::arucoCallback(
-  const geometry_msgs::msg::PoseStamped::SharedPtr msg)
+  const vision_msgs::msg::Detection2D::SharedPtr msg)
 {
-  latest_pose_ = *msg;
+  latest_pose_.header = msg->header;
+  latest_pose_.pose = msg->results[0].pose.pose;
   last_pose_stamp_ = rclcpp::Time(msg->header.stamp);
   has_pose_ = true;
 }

@@ -23,7 +23,7 @@ ArUcoDetected::ArUcoDetected(
   rclcpp::SubscriptionOptions sub_option;
   sub_option.callback_group = callback_group_;
   
-  aruco_sub_ = node_->create_subscription<geometry_msgs::msg::PoseStamped>(
+  aruco_sub_ = node_->create_subscription<vision_msgs::msg::Detection2D>(
     topic_name_,
     10,
     std::bind(&ArUcoDetected::arucoCallback, this, _1),
@@ -61,9 +61,8 @@ BT::NodeStatus ArUcoDetected::tick()
 }
 
 void ArUcoDetected::arucoCallback(
-  const geometry_msgs::msg::PoseStamped::SharedPtr msg)
+  const vision_msgs::msg::Detection2D::SharedPtr msg)
 {
-  (void)msg;  // Mark as used
   last_detection_time_ = rclcpp::Time(msg->header.stamp);
 }
 

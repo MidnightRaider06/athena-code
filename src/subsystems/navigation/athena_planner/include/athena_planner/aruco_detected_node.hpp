@@ -5,7 +5,7 @@
 #include <string>
 #include <chrono>
 
-#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "vision_msgs/msg/detection2_d.hpp"
 #include "behaviortree_cpp_v3/condition_node.h"
 #include "rclcpp/rclcpp.hpp"
 
@@ -30,8 +30,8 @@ public:
     return {
       BT::InputPort<std::string>(
         "aruco_topic",
-        "/aruco_pose",
-        "Topic name for ArUco pose messages"),
+        "/aruco_detection",
+        "Topic name for ArUco detection messages"),
       BT::InputPort<double>(
         "timeout",
         1.0,
@@ -42,9 +42,9 @@ public:
 private:
   BT::NodeStatus tick() override;
 
-  void arucoCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
+  void arucoCallback(const vision_msgs::msg::Detection2D::SharedPtr msg);
 
-  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr aruco_sub_;
+  rclcpp::Subscription<vision_msgs::msg::Detection2D>::SharedPtr aruco_sub_;
   
   rclcpp::Node::SharedPtr node_;
   rclcpp::CallbackGroup::SharedPtr callback_group_;

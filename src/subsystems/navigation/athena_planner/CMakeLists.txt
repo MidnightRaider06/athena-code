@@ -14,6 +14,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(vision_msgs REQUIRED)
 
 add_library(bt_nodes SHARED
   plugins/nav_selector_node.cpp
@@ -34,11 +35,12 @@ ament_target_dependencies(bt_nodes
   rclcpp
   std_msgs
   behaviortree_cpp_v3
-  nav2_util  
+  nav2_util
   geometry_msgs
   nav_msgs
   tf2
   tf2_geometry_msgs
+  vision_msgs
 )
 
 install(TARGETS bt_nodes
@@ -64,7 +66,7 @@ install(DIRECTORY behavior_trees/
 )
 
 ament_export_libraries(bt_nodes)
-ament_export_dependencies(rclcpp std_msgs behaviortree_cpp_v3 nav2_util nav_msgs tf2 tf2_geometry_msgs)
+ament_export_dependencies(rclcpp std_msgs behaviortree_cpp_v3 nav2_util nav_msgs tf2 tf2_geometry_msgs vision_msgs)
 ament_export_include_directories(include)
 
 if(BUILD_TESTING)
