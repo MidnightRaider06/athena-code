@@ -16,7 +16,7 @@ teleop_twist_joy:
     axis_angular.roll: -1
 
     # ackermann controller turns to at max scale_angular.yaw*pi. Seems to ignore how much you input, relies on how fast rover is going
-    scale_angular.yaw: -0.25
+    scale_angular.yaw: -0.7
     scale_angular.pitch: 0.0
     scale_angular.roll: 0.0
     publish_stamped_twist: true
