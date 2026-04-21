@@ -22,6 +22,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
 
 find_package(ament_cmake REQUIRED)
 find_package(generate_parameter_library REQUIRED)
+find_package(umdloop_can_library REQUIRED)
 find_package(ament_cmake_gmock REQUIRED)
 find_package(controller_manager REQUIRED)
 find_package(hardware_interface REQUIRED)
@@ -66,7 +67,7 @@ add_library(
 target_include_directories(drive_controllers PUBLIC
   "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(drive_controllers swerve_drive_controller_parameters double_ackermann_controller_parameters crab_steering_controller_parameters front_ackermann_controller_parameters rear_ackermann_controller_parameters)
+target_link_libraries(drive_controllers swerve_drive_controller_parameters double_ackermann_controller_parameters crab_steering_controller_parameters front_ackermann_controller_parameters rear_ackermann_controller_parameters umdloop_can_library::umdloop_can_library)
 ament_target_dependencies(drive_controllers ${THIS_PACKAGE_INCLUDE_DEPENDS})
 target_compile_definitions(drive_controllers PRIVATE "SWERVE_DRIVE_CONTROLLER_BUILDING_DLL")
 

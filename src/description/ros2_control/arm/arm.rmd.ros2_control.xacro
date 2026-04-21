@@ -4,14 +4,14 @@
     <ros2_control name="${name}" type="system">
       <hardware>
         <plugin>rmd_ros2_control/RMDHardwareInterface</plugin>
-        <param name="update_rate">2</param> <!-- Hz -->
+        <param name="update_rate">10</param> <!-- Hz -->
         <param name="logger_rate">5</param> <!-- Hz -->
         <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
         <param name="can_interface">can0</param>
       </hardware>
 
       <joint name="shoulder_pitch">
-        <param name="node_id">0x14A</param>
+        <param name="node_id">0x149</param>
         <param name="gear_ratio">100</param>
         <param name="joint_orientation">1.0</param>
         <param name="operating_velocity">150</param> <!-- motor dps -->

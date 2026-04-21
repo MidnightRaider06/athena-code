@@ -1,22 +1,14 @@
 # Parameters for the RearAckermannController
-#
-# Joint ordering convention (must be respected in the config):
-#   steer_joints : [front_left, front_right, rear_left, rear_right]
-#                   front pair → always commanded to 0 (wheels point straight)
-#                   rear  pair → Ackermann swerve angles (counter-steer toward ICR)
-#   drive_joints : [front_left, front_right, rear_left, rear_right]
-#                   front pair → pure Ackermann arc speed
-#                   rear  pair → pure Ackermann speed (r * omega)
 rear_ackermann_controller:
-  steer_joints: {
-    type: string_array,
-    default_value: [],
-    description: "Steer joint names in order [fl, fr, bl, br]. Front pair held at 0; rear pair gets swerve angles."
-  }
   drive_joints: {
     type: string_array,
     default_value: [],
-    description: "Drive joint names in order [fl, fr, bl, br]. Both pairs use Ackermann arc speed."
+    description: "The names of the drive wheel joints."
+  }
+  steer_joints: {
+    type: string_array,
+    default_value: [],
+    description: "The names of the steering joints (rear wheels)."
   }
   track_width: {
     type: double,
@@ -38,13 +30,8 @@ rear_ackermann_controller:
     default_value: 1.27,
     description: "Maximum linear speed in m/s."
   }
-  max_steering_angle: {
+  max_steer_angle: {
     type: double,
-    default_value: 0.785398,
-    description: "Maximum steering angle in radians (pi/4)."
-  }
-  min_steering_angle: {
-    type: double,
-    default_value: -0.785398,
-    description: "Minimum steering angle in radians (-pi/4)."
+    default_value: 0.785,
+    description: "Maximum steering angle in radians."
   }

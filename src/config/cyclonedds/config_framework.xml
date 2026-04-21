@@ -4,7 +4,7 @@ https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/master/etc/cyclo
     <Domain Id="any">
         <General>
             <Interfaces>
-                <NetworkInterface name="eno1"/>
+                <NetworkInterface name="enx9cbf0d007947"/>
             </Interfaces>
             <AllowMulticast>false</AllowMulticast>
         </General>
