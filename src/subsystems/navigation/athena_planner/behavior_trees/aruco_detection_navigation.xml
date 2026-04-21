@@ -1,34 +1,45 @@
 <root>
   <BehaviorTree ID="ArucoDetectionNavigation">
     <ReactiveFallback>
+
+      <!-- ArUco detected: approach the marker -->
       <Sequence>
         <ArUcoDetected aruco_topic="/aruco_pose" timeout="1.0" />
         <GetArucoPose aruco_topic="/aruco_pose" timeout="1.5" aruco_pose="{aruco_pose}" />
 
         <RecoveryNode number_of_retries="3" name="NavWithRecovery">
-          <!-- Primary attempt -->
+
           <PipelineSequence name="PlanAndFollow">
             <RateController hz="1.0">
               <ComputePathToPose goal="{aruco_pose}" path="{path}" planner_id="GridBased"/>
             </RateController>
-            <FollowPath path="{path}" controller_id="FollowPath"/>
+            <!-- Level 1b: control failure -> clear local costmap once, retry following -->
+            <RecoveryNode number_of_retries="1" name="FollowPathRecovery">
+              <FollowPath path="{path}" controller_id="FollowPath"/>
+              <ClearEntireCostmap name="ClearLocalCostmap-Aruco"
+                  service_name="/local_costmap/clear_entirely_local_costmap"/>
+            </RecoveryNode>
           </PipelineSequence>
 
-          <!-- Recovery behavior (runs after each failure, then retries) -->
+          <!-- Level 2: GoalUpdated short-circuits recovery if a new goal arrives -->
           <ReactiveFallback name="RecoveryActions">
+            <GoalUpdated/>
             <Sequence>
-              <ClearEntireCostmap name="clear_local_costmap" service_name="/local_costmap/clear_entirely_local_costmap"/>
-              <Wait wait_duration="0.2" />
+              <ClearEntireCostmap name="ClearLocalCostmap-Aruco"
+                  service_name="/local_costmap/clear_entirely_local_costmap"/>
+              <Wait wait_duration="1"/>
             </Sequence>
           </ReactiveFallback>
-        </RecoveryNode> 
+
+        </RecoveryNode>
       </Sequence>
 
-      <!-- ArUco NOT detected - execute spiral coverage search -->
+      <!-- ArUco NOT detected: execute spiral coverage search -->
       <Sequence name="SpiralSearchCoverage">
         <SpiralCoverageAction radius="15.0" spacing="2.0" angular_step="0.5" frame_id="map" path="{spiral_path}" />
         <FollowPath path="{spiral_path}" controller_id="FollowPath"/>
       </Sequence>
+
     </ReactiveFallback>
   </BehaviorTree>
 </root>

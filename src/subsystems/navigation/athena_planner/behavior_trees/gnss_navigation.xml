@@ -1,10 +1,47 @@
 <root>
   <BehaviorTree ID="GNSSNavigation">
-    <PipelineSequence name="NavigateWithReplanning">
-      <RateController hz="5.0">
-        <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
-      </RateController>
-      <FollowPath path="{path}" controller_id="FollowPath"/>
-    </PipelineSequence>
+
+    <!-- Outer loop: up to 6 system-level recovery attempts before aborting -->
+    <RecoveryNode number_of_retries="6" name="NavigateRecovery">
+
+      <PipelineSequence name="NavigateWithReplanning">
+
+        <!-- Level 1a: plan failure -> clear global costmap once, retry planning -->
+        <RateController hz="5.0">
+          <RecoveryNode number_of_retries="1" name="ComputePathRecovery">
+            <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+            <ClearEntireCostmap name="ClearGlobalCostmap-GNSS"
+                service_name="/global_costmap/clear_entirely_global_costmap"/>
+          </RecoveryNode>
+        </RateController>
+
+        <!-- Level 1b: control failure -> clear local costmap once, retry following -->
+        <RecoveryNode number_of_retries="1" name="FollowPathRecovery">
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+          <ClearEntireCostmap name="ClearLocalCostmap-GNSS-Follow"
+              service_name="/local_costmap/clear_entirely_local_costmap"/>
+        </RecoveryNode>
+
+      </PipelineSequence>
+
+      <!-- Level 2: system recovery, runs when both Level 1 retries are exhausted.
+           GoalUpdated short-circuits recovery if a new goal arrives mid-recovery.
+           RoundRobin cycles through escalating behaviors across successive outer retries. -->
+      <ReactiveFallback name="RecoveryFallback">
+        <GoalUpdated/>
+        <RoundRobin name="RecoveryActions">
+          <Sequence name="ClearBothCostmaps">
+            <ClearEntireCostmap name="ClearLocalCostmap-GNSS-Recovery"
+                service_name="/local_costmap/clear_entirely_local_costmap"/>
+            <ClearEntireCostmap name="ClearGlobalCostmap-GNSS-Recovery"
+                service_name="/global_costmap/clear_entirely_global_costmap"/>
+          </Sequence>
+          <Wait wait_duration="5"/>
+          <BackUp backup_dist="0.5" backup_speed="0.15" time_allowance="10"/>
+          <DriveOnHeading dist_to_travel="0.3" speed="0.15" time_allowance="10"/>
+        </RoundRobin>
+      </ReactiveFallback>
+
+    </RecoveryNode>
   </BehaviorTree>
 </root>
