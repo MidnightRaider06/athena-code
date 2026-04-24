@@ -4,3 +4,4 @@ empy==3.3.4
 lark
 numpy<2.0
 opencv-contrib-python==4.10.0.84
+ahrs
