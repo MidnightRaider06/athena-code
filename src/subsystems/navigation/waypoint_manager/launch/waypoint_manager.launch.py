@@ -7,7 +7,6 @@ from launch_ros.actions import Node
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('use_sim_time', default_value='false'),
-        DeclareLaunchArgument('map_frame', default_value='map'),
         Node(
             package='waypoint_manager',
             executable='waypoint_manager_node',

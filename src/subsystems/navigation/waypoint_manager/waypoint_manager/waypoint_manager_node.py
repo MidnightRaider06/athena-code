@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import math
 
 import rclpy
 from rclpy.node import Node
@@ -8,16 +7,12 @@ from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from action_msgs.msg import GoalStatus, GoalStatusArray
-import tf2_ros
-from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
 
 from std_msgs.msg import String
-from geometry_msgs.msg import PoseStamped, Quaternion
-
-from nav2_msgs.action import NavigateToPose
+from sensor_msgs.msg import NavSatFix
 
 from msgs.msg import WaypointEntry, WaypointManagerState
-from msgs.srv import ListWaypoints, GetWaypoint
+from msgs.srv import ClearWaypoints
 from msgs.action import NavigateToGPS, NavigateToWaypoint
 
 
@@ -25,54 +20,55 @@ class WaypointManagerNode(Node):
     def __init__(self):
         super().__init__('waypoint_manager')
 
-        self.declare_parameter('map_frame', 'map')
-        self.declare_parameter('robot_frame', 'base_footprint')
-        self._map_frame = self.get_parameter('map_frame').value
-        self._robot_frame = self.get_parameter('robot_frame').value
-
-        # In-memory store: only locations where Nav2 reported STATUS_SUCCEEDED
-        self._waypoints: dict[str, dict] = {}
+        # In-memory store: uint32 id → {id, latitude, longitude, altitude, timestamp}
+        self._waypoints: dict[int, dict] = {}
         self._wp_counter = 0
 
-        # Track nav2 goal statuses to detect SUCCEEDED transitions
+        self._latest_gps: NavSatFix | None = None
         self._seen_goal_statuses: dict[bytes, int] = {}
 
         self._nav_status = 'idle'
-        self._active_nav_label = ''
+        self._active_waypoint_id = 0  # 0 = none
+        self._current_nav_goal_handle = None
 
         self._cb_group = ReentrantCallbackGroup()
 
-        # TF listener for pose lookup on nav success
-        self._tf_buffer = tf2_ros.Buffer()
-        self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
+        self.declare_parameter('gps_topic', '/gps/fix')
+        self.declare_parameter('nav_mode_topic', '/nav_mode')
+        self.declare_parameter('nav2_status_topic', '/navigate_to_pose/_action/status')
+        self.declare_parameter('navigate_to_gps_action', 'navigate_to_gps')
 
-        # /nav_mode publisher — QoS must match NavSelector (transient_local, reliable, keep_last(1))
+        gps_topic = self.get_parameter('gps_topic').value
+        nav_mode_topic = self.get_parameter('nav_mode_topic').value
+        nav2_status_topic = self.get_parameter('nav2_status_topic').value
+        navigate_to_gps_action = self.get_parameter('navigate_to_gps_action').value
+
+        # QoS must match NavSelector (transient_local, reliable, depth=1)
         nav_mode_qos = QoSProfile(
             depth=1,
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
             reliability=ReliabilityPolicy.RELIABLE,
         )
-        self._nav_mode_pub = self.create_publisher(String, '/nav_mode', nav_mode_qos)
+        self._nav_mode_pub = self.create_publisher(String, nav_mode_topic, nav_mode_qos)
 
-        # State broadcast at 2 Hz
         self._state_pub = self.create_publisher(
             WaypointManagerState, '/waypoint_manager/state', 10
         )
         self.create_timer(0.5, self._publish_state)
 
-        # Watch Nav2 goal statuses — store waypoint whenever navigate_to_pose succeeds
+        self.create_subscription(NavSatFix, gps_topic, self._gps_cb, 10)
+        self.get_logger().info(f'Subscribed to {gps_topic}')
+
         self.create_subscription(
             GoalStatusArray,
-            '/navigate_to_pose/_action/status',
+            nav2_status_topic,
             self._nav2_status_cb,
             10,
         )
+        self.get_logger().info(f'Subscribed to {nav2_status_topic}')
 
-        # Query services
-        self.create_service(ListWaypoints, '~/list_waypoints', self._list_waypoints_cb)
-        self.create_service(GetWaypoint, '~/get_waypoint', self._get_waypoint_cb)
+        self.create_service(ClearWaypoints, '~/clear_waypoints', self._clear_waypoints_cb)
 
-        # NavigateToWaypoint action server — command interface only, does not store waypoints
         self._nav_action_server = ActionServer(
             self,
             NavigateToWaypoint,
@@ -83,23 +79,24 @@ class WaypointManagerNode(Node):
             callback_group=self._cb_group,
         )
 
-        # Nav2 NavigateToPose action client (map-frame goals)
-        self._nav2_client = ActionClient(
-            self,
-            NavigateToPose,
-            'navigate_to_pose',
-            callback_group=self._cb_group,
-        )
-
-        # GPS action client (lat/lon goals — requires gps_goal server to be running)
         self._gps_client = ActionClient(
             self,
             NavigateToGPS,
-            'navigate_to_gps',
+            navigate_to_gps_action,
             callback_group=self._cb_group,
         )
 
         self.get_logger().info('WaypointManager ready')
+
+    # ── GPS fix cache ─────────────────────────────────────────────────────────
+
+    def _gps_cb(self, msg: NavSatFix):
+        if self._latest_gps is None:
+            self.get_logger().info(
+                f'First GPS fix received: ({msg.latitude:.6f}, {msg.longitude:.6f}), '
+                f'status={msg.status.status}'
+            )
+        self._latest_gps = msg
 
     # ── Nav2 status watcher ───────────────────────────────────────────────────
 
@@ -108,42 +105,29 @@ class WaypointManagerNode(Node):
             uid = bytes(entry.goal_info.goal_id.uuid)
             prev = self._seen_goal_statuses.get(uid)
             curr = entry.status
-
             if prev != GoalStatus.STATUS_SUCCEEDED and curr == GoalStatus.STATUS_SUCCEEDED:
-                self._store_current_pose()
-
+                self.get_logger().info('Nav2 goal succeeded — storing GPS waypoint')
+                self._store_current_gps()
             self._seen_goal_statuses[uid] = curr
 
-    def _store_current_pose(self):
-        try:
-            t = self._tf_buffer.lookup_transform(
-                self._map_frame, self._robot_frame, rclpy.time.Time()
-            )
-        except (LookupException, ConnectivityException, ExtrapolationException) as e:
-            self.get_logger().warn(f'TF lookup failed on nav success, waypoint not stored: {e}')
+    def _store_current_gps(self):
+        if self._latest_gps is None:
+            self.get_logger().warn('No GPS fix available; waypoint not stored')
             return
-
-        x = t.transform.translation.x
-        y = t.transform.translation.y
-        q = t.transform.rotation
-        yaw = math.atan2(
-            2.0 * (q.w * q.z + q.x * q.y),
-            1.0 - 2.0 * (q.y * q.y + q.z * q.z),
-        )
-
+        gps = self._latest_gps
         self._wp_counter += 1
-        wp_id = f'wp_{self._wp_counter}'
+        wp_id = self._wp_counter
         now = self.get_clock().now().to_msg()
         self._waypoints[wp_id] = {
             'id': wp_id,
-            'x': x,
-            'y': y,
-            'yaw': yaw,
-            'description': '',
+            'latitude': gps.latitude,
+            'longitude': gps.longitude,
+            'altitude': gps.altitude,
             'timestamp': {'sec': now.sec, 'nanosec': now.nanosec},
         }
         self.get_logger().info(
-            f'Nav2 goal succeeded — stored "{wp_id}" at ({x:.2f}, {y:.2f})'
+            f'Nav2 goal succeeded — stored waypoint {wp_id} at '
+            f'({gps.latitude:.6f}, {gps.longitude:.6f})'
         )
 
     # ── Helpers ───────────────────────────────────────────────────────────────
@@ -151,11 +135,9 @@ class WaypointManagerNode(Node):
     def _dict_to_msg(self, d: dict) -> WaypointEntry:
         msg = WaypointEntry()
         msg.id = d['id']
-        msg.x = float(d['x'])
-        msg.y = float(d['y'])
-        msg.yaw = float(d['yaw'])
-        msg.description = d.get('description', '')
-        msg.visited = True
+        msg.latitude = float(d['latitude'])
+        msg.longitude = float(d['longitude'])
+        msg.altitude = float(d['altitude'])
         ts = d.get('timestamp', {})
         msg.timestamp.sec = int(ts.get('sec', 0))
         msg.timestamp.nanosec = int(ts.get('nanosec', 0))
@@ -165,7 +147,7 @@ class WaypointManagerNode(Node):
 
     def _publish_state(self):
         msg = WaypointManagerState()
-        msg.active_waypoint_id = self._active_nav_label
+        msg.active_waypoint_id = self._active_waypoint_id
         msg.nav_status = self._nav_status
         msg.waypoints = [self._dict_to_msg(d) for d in self._waypoints.values()]
         msg.last_update = self.get_clock().now().to_msg()
@@ -173,16 +155,13 @@ class WaypointManagerNode(Node):
 
     # ── Service callbacks ─────────────────────────────────────────────────────
 
-    def _list_waypoints_cb(self, request, response):
-        response.waypoints = [self._dict_to_msg(d) for d in self._waypoints.values()]
-        return response
-
-    def _get_waypoint_cb(self, request, response):
-        if request.id not in self._waypoints:
-            response.found = False
-            return response
-        response.found = True
-        response.waypoint = self._dict_to_msg(self._waypoints[request.id])
+    def _clear_waypoints_cb(self, request, response):
+        count = len(self._waypoints)
+        self._waypoints.clear()
+        self._wp_counter = 0
+        response.success = True
+        response.message = f'Cleared {count} waypoint(s)'
+        self.get_logger().info(f'Cleared {count} waypoint(s)')
         return response
 
     # ── Action callbacks ──────────────────────────────────────────────────────
@@ -194,19 +173,31 @@ class WaypointManagerNode(Node):
         return GoalResponse.ACCEPT
 
     def _cancel_callback(self, goal_handle):
-        self.get_logger().info('Cancel requested for active navigation')
+        self.get_logger().info('Cancel requested — forwarding to navigate_to_gps')
+        if self._current_nav_goal_handle is not None:
+            self._current_nav_goal_handle.cancel_goal_async()
         return CancelResponse.ACCEPT
 
     async def _navigate_execute_cb(self, goal_handle: ServerGoalHandle):
-        req = goal_handle.request
-        label = req.name or 'unnamed'
+        wp_id = goal_handle.request.waypoint_id
+        result = NavigateToWaypoint.Result()
 
-        self._active_nav_label = label
+        if wp_id not in self._waypoints:
+            self.get_logger().error(f'Waypoint {wp_id} not found')
+            goal_handle.abort()
+            result.success = False
+            result.message = f'Waypoint {wp_id} not found'
+            return result
+
+        wp = self._waypoints[wp_id]
+        self._active_waypoint_id = wp_id
         self._nav_status = 'navigating'
-
         self._nav_mode_pub.publish(String(data='GNSS'))
 
-        result = NavigateToWaypoint.Result()
+        self.get_logger().info(
+            f'Navigating to waypoint {wp_id} '
+            f'(lat={wp["latitude"]:.6f}, lon={wp["longitude"]:.6f})'
+        )
 
         def _feedback_cb(fb):
             feedback = NavigateToWaypoint.Feedback()
@@ -214,72 +205,41 @@ class WaypointManagerNode(Node):
             feedback.distance_remaining = fb.feedback.distance_remaining
             goal_handle.publish_feedback(feedback)
 
-        if req.use_gps:
-            self.get_logger().info(
-                f'Navigating to "{label}" via GPS '
-                f'(lat={req.latitude:.6f}, lon={req.longitude:.6f})'
-            )
-            if not self._gps_client.wait_for_server(timeout_sec=5.0):
-                self.get_logger().error('navigate_to_gps server not available')
-                self._nav_status = 'failed'
-                self._active_nav_label = ''
-                goal_handle.abort()
-                result.success = False
-                result.message = 'navigate_to_gps server not available'
-                return result
+        if not self._gps_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().error('navigate_to_gps server not available')
+            self._nav_status = 'failed'
+            self._active_waypoint_id = 0
+            goal_handle.abort()
+            result.success = False
+            result.message = 'navigate_to_gps server not available'
+            return result
 
-            gps_goal = NavigateToGPS.Goal()
-            gps_goal.latitude = req.latitude
-            gps_goal.longitude = req.longitude
-            gps_goal.position_tolerance = req.position_tolerance
+        gps_goal = NavigateToGPS.Goal()
+        gps_goal.latitude = wp['latitude']
+        gps_goal.longitude = wp['longitude']
+        gps_goal.position_tolerance = 0.0  # use gps_goal server default
 
-            send_future = self._gps_client.send_goal_async(gps_goal, feedback_callback=_feedback_cb)
-        else:
-            self.get_logger().info(
-                f'Navigating to "{label}" via map frame '
-                f'({req.x:.2f}, {req.y:.2f}), yaw={req.yaw:.2f}'
-            )
-            if not self._nav2_client.wait_for_server(timeout_sec=5.0):
-                self.get_logger().error('navigate_to_pose server not available')
-                self._nav_status = 'failed'
-                self._active_nav_label = ''
-                goal_handle.abort()
-                result.success = False
-                result.message = 'navigate_to_pose server not available'
-                return result
-
-            pose_goal = NavigateToPose.Goal()
-            pose_goal.pose = PoseStamped()
-            pose_goal.pose.header.frame_id = self._map_frame
-            pose_goal.pose.header.stamp = self.get_clock().now().to_msg()
-            pose_goal.pose.pose.position.x = req.x
-            pose_goal.pose.pose.position.y = req.y
-            pose_goal.pose.pose.position.z = 0.0
-            pose_goal.pose.pose.orientation = Quaternion(
-                x=0.0,
-                y=0.0,
-                z=math.sin(req.yaw / 2.0),
-                w=math.cos(req.yaw / 2.0),
-            )
-
-            send_future = self._nav2_client.send_goal_async(pose_goal, feedback_callback=_feedback_cb)
-
+        send_future = self._gps_client.send_goal_async(gps_goal, feedback_callback=_feedback_cb)
         nav_goal_handle = await send_future
 
         if not nav_goal_handle.accepted:
-            self.get_logger().error('Goal rejected by navigation server')
+            self.get_logger().error('Goal rejected by navigate_to_gps server')
             self._nav_status = 'failed'
-            self._active_nav_label = ''
+            self._active_waypoint_id = 0
             goal_handle.abort()
             result.success = False
-            result.message = 'Goal rejected by navigation server'
+            result.message = 'Goal rejected by navigate_to_gps server'
             return result
 
-        nav_result = await nav_goal_handle.get_result_async()
+        self._current_nav_goal_handle = nav_goal_handle
+        try:
+            nav_result = await nav_goal_handle.get_result_async()
+        finally:
+            self._current_nav_goal_handle = None
 
         if goal_handle.is_cancel_requested:
             self._nav_status = 'idle'
-            self._active_nav_label = ''
+            self._active_waypoint_id = 0
             goal_handle.canceled()
             result.success = False
             result.message = 'Canceled'
@@ -289,7 +249,7 @@ class WaypointManagerNode(Node):
             self._nav_status = 'success'
             goal_handle.succeed()
             result.success = True
-            result.message = f'Reached "{label}"'
+            result.message = f'Reached waypoint {wp_id}'
         elif nav_result.status == GoalStatus.STATUS_CANCELED:
             self._nav_status = 'idle'
             goal_handle.canceled()
@@ -298,13 +258,13 @@ class WaypointManagerNode(Node):
         else:
             self._nav_status = 'failed'
             self.get_logger().warn(
-                f'Navigation to "{label}" failed (status={nav_result.status})'
+                f'Navigation to waypoint {wp_id} failed (status={nav_result.status})'
             )
             goal_handle.abort()
             result.success = False
             result.message = f'Navigation failed (status={nav_result.status})'
 
-        self._active_nav_label = ''
+        self._active_waypoint_id = 0
         return result
 
 
