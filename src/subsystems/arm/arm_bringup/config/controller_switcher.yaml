@@ -1,0 +1,15 @@
+/**:
+  ros__parameters:
+    subsystem: arm
+    full_arm:
+      - manual_arm_cylindrical_controller
+      - arm_velocity_controller
+      - twodof_joint_trajectory_controller
+      - threedof_joint_trajectory_controller
+    arm:
+      - manual_arm_joint_by_joint_controller
+    wrist:
+      - manual_2dof_wrist_joint_by_joint_controller
+      - manual_3dof_wrist_joint_by_joint_controller
+    end_effector:
+      - manual_end_effector_gripper_claw_controller

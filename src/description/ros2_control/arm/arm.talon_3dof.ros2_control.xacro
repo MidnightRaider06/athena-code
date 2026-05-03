@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="talon_3dof_ros2_control" params="name deactivate_talon">
+    <ros2_control name="${name}" type="system">
+      <hardware>
+        <xacro:if value="${deactivate_talon}">
+          <plugin>mock_components/GenericSystem</plugin>
+        </xacro:if>
+        <xacro:unless value="${deactivate_talon}">
+          <plugin>talon_ros2_control/TALONHardwareInterface</plugin>
+          <param name="update_rate">10</param> <!-- Hz -->
+          <param name="logger_rate">5</param> <!-- Hz -->
+          <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
+          <param name="can_interface">can0</param>
+        </xacro:unless>
+      </hardware>
+
+      <joint name="wrist_motor_a">
+        <param name="node_id">6</param>
+        <param name="max_disp">0.06</param> <!-- meters -->
+        <param name="joint_type">revolute</param>
+        <!-- Motor config (Pololu 37D defaults) -->
+        <param name="encoder_resolution">64.0</param>
+        <param name="gear_ratio">102.08</param>
+        <param name="inverted">true</param>
+        <param name="sensor_phase">true</param>
+        <param name="kP">0.25</param>
+        <param name="kI">0.0</param>
+        <param name="kD">0.0</param>
+        <param name="kF">0.0</param>
+        <command_interface name="position"/>
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="motor_temperature"/>
+        <state_interface name="torque_current"/>
+      </joint>
+
+      <joint name="wrist_motor_b">
+        <param name="node_id">4</param>
+        <param name="max_disp">0.06</param> <!-- meters -->
+        <param name="joint_type">revolute</param>
+        <!-- Motor config (Pololu 37D defaults) -->
+        <param name="encoder_resolution">64.0</param>
+        <param name="gear_ratio">102.08</param>
+        <param name="inverted">true</param>
+        <param name="sensor_phase">true</param>
+        <param name="kP">0.25</param>
+        <param name="kI">0.0</param>
+        <param name="kD">0.0</param>
+        <param name="kF">0.0</param>
+        <command_interface name="position"/>
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="motor_temperature"/>
+        <state_interface name="torque_current"/>
+      </joint>
+
+      <joint name="wrist_motor_c">
+        <param name="node_id">5</param>
+        <param name="max_disp">0.06</param> <!-- meters -->
+        <param name="joint_type">revolute</param>
+        <!-- Motor config (Pololu 37D defaults) -->
+        <param name="encoder_resolution">64.0</param>
+        <param name="gear_ratio">102.08</param>
+        <param name="inverted">true</param>
+        <param name="sensor_phase">true</param>
+        <param name="kP">0.25</param>
+        <param name="kI">0.0</param>
+        <param name="kD">0.0</param>
+        <param name="kF">0.0</param>
+        <command_interface name="position"/>
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="motor_temperature"/>
+        <state_interface name="torque_current"/>
+      </joint>
+
+      <joint name="gripper_claw">
+        <param name="node_id">2</param>
+        <param name="max_disp">0.06</param> <!-- meters -->
+        <param name="joint_type">prismatic</param>
+        <!-- Motor config (Pololu 37D defaults) -->
+        <param name="encoder_resolution">64.0</param>
+        <param name="gear_ratio">102.08</param>
+        <param name="distance_per_rev">0.0015</param> <!-- m/rev -->
+        <param name="inverted">true</param>
+        <param name="sensor_phase">true</param>
+        <param name="kP">0.25</param>
+        <param name="kI">0.0</param>
+        <param name="kD">0.0</param>
+        <param name="kF">0.0</param>
+        <command_interface name="position"/>
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+    </ros2_control>
+  </xacro:macro>
+</robot>

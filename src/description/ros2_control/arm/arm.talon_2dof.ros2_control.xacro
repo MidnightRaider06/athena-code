@@ -1,17 +1,23 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="talon_ros2_control" params="name">
+  <xacro:macro name="talon_2dof_ros2_control" params="name deactivate_talon">
     <ros2_control name="${name}" type="system">
       <hardware>
-        <plugin>talon_ros2_control/TALONHardwareInterface</plugin>
-        <param name="update_rate">10</param> <!-- Hz -->
-        <param name="logger_rate">5</param> <!-- Hz -->
-        <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
-        <param name="can_interface">can0</param>
+        <param name="deactivate_talon">${deactivate_talon}</param>
+        <xacro:if value="${deactivate_talon}">
+          <plugin>mock_components/GenericSystem</plugin>
+        </xacro:if>
+        <xacro:unless value="${deactivate_talon}">
+          <plugin>talon_ros2_control/TALONHardwareInterface</plugin>
+          <param name="update_rate">10</param> <!-- Hz -->
+          <param name="logger_rate">5</param> <!-- Hz -->
+          <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
+          <param name="can_interface">can0</param>
+        </xacro:unless>
       </hardware>
 
       <joint name="gripper_claw">
-        <param name="node_id">2</param>
+        <param name="node_id">4</param>
         <param name="max_disp">0.06</param> <!-- meters -->
         <param name="joint_type">prismatic</param>
         <!-- Motor config (Pololu 37D defaults) -->

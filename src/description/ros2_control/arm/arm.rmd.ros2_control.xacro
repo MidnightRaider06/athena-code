@@ -11,7 +11,7 @@
       </hardware>
 
       <joint name="shoulder_pitch">
-        <param name="node_id">0x149</param>
+        <param name="node_id">0x144</param>
         <param name="gear_ratio">100</param>
         <param name="joint_orientation">1.0</param>
         <param name="operating_velocity">150</param> <!-- motor dps -->
@@ -22,7 +22,7 @@
       </joint>
       
       <joint name="elbow_pitch">
-        <param name="node_id">0x144</param>
+        <param name="node_id">0x149</param>
         <param name="gear_ratio">100</param>
         <param name="joint_orientation">1.0</param>
         <param name="operating_velocity">150</param> <!-- motor dps -->

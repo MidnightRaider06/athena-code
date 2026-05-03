@@ -29,7 +29,7 @@
 #include <utility>
 #include <vector>
 
-#include "athena_arm_controllers/manual_arm_joint_by_joint_controller.hpp"
+#include "athena_arm_controllers/manual_2dof_wrist_joint_by_joint_controller.hpp"
 #include "gmock/gmock.h"
 #include "hardware_interface/loaned_command_interface.hpp"
 #include "hardware_interface/loaned_state_interface.hpp"
@@ -41,9 +41,9 @@
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 
 // TODO(anyone): replace the state and command message types
-using ControllerStateMsg = arm_controllers::ManualArmJointByJointController::ControllerStateMsg;
-using ControllerReferenceMsg = arm_controllers::ManualArmJointByJointController::ControllerReferenceMsg;
-using ControllerModeSrvType = arm_controllers::ManualArmJointByJointController::ControllerModeSrvType;
+using ControllerStateMsg = arm_controllers::Manual2DOFWristJointByJointController::ControllerStateMsg;
+using ControllerReferenceMsg = arm_controllers::Manual2DOFWristJointByJointController::ControllerReferenceMsg;
+using ControllerModeSrvType = arm_controllers::Manual2DOFWristJointByJointController::ControllerModeSrvType;
 
 namespace
 {
@@ -52,7 +52,7 @@ constexpr auto NODE_ERROR = controller_interface::CallbackReturn::ERROR;
 }  // namespace
 
 // subclassing and friending so we can access member variables
-class TestableManualArmJointByJointController : public arm_controllers::ManualArmJointByJointController
+class TestableManualArmJointByJointController : public arm_controllers::Manual2DOFWristJointByJointController
 {
   FRIEND_TEST(ManualArmJointByJointControllerTest, all_parameters_set_configure_success);
   FRIEND_TEST(ManualArmJointByJointControllerTest, activate_success);
@@ -65,7 +65,7 @@ public:
   controller_interface::CallbackReturn on_configure(
     const rclcpp_lifecycle::State & previous_state) override
   {
-    auto ret = arm_controllers::ManualArmJointByJointController::on_configure(previous_state);
+    auto ret = arm_controllers::Manual2DOFWristJointByJointController::on_configure(previous_state);
     // Only if on_configure is successful create subscription
     if (ret == CallbackReturn::SUCCESS)
     {

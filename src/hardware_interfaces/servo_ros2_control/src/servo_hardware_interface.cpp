@@ -543,13 +543,20 @@ hardware_interface::return_type servo_ros2_control::SERVOHardwareInterface::writ
           if (control_level_[i] == integration_level_t::POSITION && servo_type_[i] == servo_type_t::CONTINUOUS) {
             RCLCPP_WARN(rclcpp::get_logger("SERVOHardwareInterface"), "Joint %s is continuous type and cannot be position controlled.", info_.joints[i].name.c_str());
           }
-          else if (control_level_[i] == integration_level_t::VELOCITY && servo_type_[i] == servo_type_t::STANDARD) {
+          if (control_level_[i] == integration_level_t::VELOCITY && servo_type_[i] == servo_type_t::STANDARD) {
             RCLCPP_WARN(rclcpp::get_logger("SERVOHardwareInterface"), "Joint %s is standard type and cannot be velocity controlled.", info_.joints[i].name.c_str());
           }
-          else{
-            RCLCPP_WARN(rclcpp::get_logger("SERVOHardwareInterface"), "Joint command value not found or undefined command state for joint %s", info_.joints[i].name.c_str());          }
+          if (control_level_[i] == integration_level_t::UNDEFINED) {
+            RCLCPP_WARN(rclcpp::get_logger("SERVOHardwareInterface"), "Joint %s has undefined control level. Please ensure it is properly configured.", info_.joints[i].name.c_str());
+          }
+          if(std::isfinite(joint_command_velocity_[i]) == false && control_level_[i] == integration_level_t::VELOCITY){
+            RCLCPP_WARN(rclcpp::get_logger("SERVOHardwareInterface"), "Joint %s has non-finite velocity command.", info_.joints[i].name.c_str());
+          }
+          if(std::isfinite(joint_command_position_[i]) == false && control_level_[i] == integration_level_t::POSITION){
+            RCLCPP_WARN(rclcpp::get_logger("SERVOHardwareInterface"), "Joint %s has non-finite position command.", info_.joints[i].name.c_str());
           }
         }
+      }
       
       canBus.send(can_tx_frame_);
     // }

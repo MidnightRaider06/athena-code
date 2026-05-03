@@ -18,17 +18,7 @@
 #
 
 manual_arm_joint_by_joint_controller:
-  position_joints: {
-    type: string_array,
-    default_value: [],
-    description: "Specifies joints which are controlled via position.",
-    read_only: true,
-    validation: {
-      unique<>: null,
-      not_empty<>: null,
-    }
-  }
-  velocity_joints: {
+  joints: {
     type: string_array,
     default_value: [],
     description: "Specifies joints which are controlled via velocity.",
@@ -65,5 +55,13 @@ manual_arm_joint_by_joint_controller:
     read_only: true,
     validation: {
       not_empty<>: null,
+      fixed_size<>: 3,
     }
+  }
+
+  virtual_four_bar_coupling_ratio: {
+    type: double,
+    default_value: -1.0,
+    description: "Virtual four-bar ratio applied as elbow_motor_velocity += ratio * shoulder_motor_velocity.",
+    read_only: true,
   }

@@ -8,10 +8,46 @@
 </library>
 
 <library path="arm_controllers">
+  <class name="arm_controllers/Manual2DOFWristJointByJointController"
+         type="arm_controllers::Manual2DOFWristJointByJointController" base_class_type="controller_interface::ControllerInterface">
+  <description>
+    Joint by joint manual ros2 controller for athena wrist with 2DOF.
+  </description>
+  </class>
+</library>
+
+<library path="arm_controllers">
+  <class name="arm_controllers/Manual3DOFWristJointByJointController"
+         type="arm_controllers::Manual3DOFWristJointByJointController" base_class_type="controller_interface::ControllerInterface">
+  <description>
+    Joint by joint manual ros2 controller for athena wrist with 3DOF.
+  </description>
+  </class>
+</library>
+
+<library path="arm_controllers">
   <class name="arm_controllers/ManualArmJointByJointController"
          type="arm_controllers::ManualArmJointByJointController" base_class_type="controller_interface::ControllerInterface">
   <description>
-    Joint by joint manual ros2 controller for athena arm.
+    Joint by joint manual ros2 controller for athena arm (base, shoulder, elbow).
+  </description>
+  </class>
+</library>
+
+<library path="arm_controllers">
+  <class name="arm_controllers/ManualEndEffectorGripperClawController"
+         type="arm_controllers::ManualEndEffectorGripperClawController" base_class_type="controller_interface::ControllerInterface">
+  <description>
+    Manual ros2 controller for athena end effector (gripper claw + actuator).
+  </description>
+  </class>
+</library>
+
+<library path="arm_controllers">
+  <class name="arm_controllers/Manual3DOFWristOrientationController"
+         type="arm_controllers::Manual3DOFWristOrientationController" base_class_type="controller_interface::ControllerInterface">
+  <description>
+    Manual ros2 controller for athena arm that controls the 3DOF wrist orientation (yaw, pitch, roll) using the joysticks on the gamepad.
   </description>
   </class>
 </library>
