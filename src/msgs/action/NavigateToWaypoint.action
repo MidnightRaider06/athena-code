@@ -1,11 +1,4 @@
-bool use_gps
-float64 x
-float64 y
-float64 yaw
-float64 latitude
-float64 longitude
-float32 position_tolerance
-string name
+uint32 waypoint_id
 ---
 bool success
 string message

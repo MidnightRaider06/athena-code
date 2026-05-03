@@ -1,7 +1,5 @@
-string id
-float64 x
-float64 y
-float64 yaw
-string description
-bool visited
+uint32 id
+float64 latitude
+float64 longitude
+float64 altitude
 builtin_interfaces/Time timestamp

@@ -1,4 +1,4 @@
-string active_waypoint_id
+uint32 active_waypoint_id
 string nav_status
-msgs/WaypointEntry[] waypoints
+WaypointEntry[] waypoints
 builtin_interfaces/Time last_update

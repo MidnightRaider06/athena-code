@@ -1,4 +1,0 @@
-string id
----
-bool found
-msgs/WaypointEntry waypoint
