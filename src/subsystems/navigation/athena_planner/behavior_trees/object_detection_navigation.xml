@@ -1,7 +1,23 @@
 <root>
   <BehaviorTree ID="ObjectDetectionNavigation">
-    <ForceSuccess>
-      <Wait wait_duration="0.01"/>
-    </ForceSuccess>
+    <ReactiveFallback>
+
+      <!-- Sequence 1: Check if object is detected -->
+      <Sequence name="ObjectDetectedSequence">
+        <ObjectDetected object_topic="/yolo/target_found" timeout="1.0" />
+      </Sequence>
+
+      <!-- Sequence 2: If not detected, perform spiral search -->
+      <Sequence name="SpiralSearchCoverage">
+        <SpiralCoverageAction
+          radius="15.0"
+          spacing="2.0"
+          angular_step="0.5"
+          frame_id="map"
+          path="{spiral_path}" />
+        <FollowPath path="{spiral_path}" controller_id="FollowPath"/>
+      </Sequence>
+
+    </ReactiveFallback>
   </BehaviorTree>
-</root>
+</root>ss

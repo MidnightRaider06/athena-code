@@ -1,0 +1,3 @@
+[submodule "nav2_config"]
+	path = nav2_config
+	url = https://github.com/sutharsan-311/nav2_config.git

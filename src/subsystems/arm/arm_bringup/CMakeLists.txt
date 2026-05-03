@@ -25,10 +25,4 @@ install(
   DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME}
 )
-
-install(PROGRAMS
-  scripts/controller_switcher.py
-  DESTINATION lib/${PROJECT_NAME}
-)
-
 ament_package()

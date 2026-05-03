@@ -39,7 +39,7 @@ TEST(TestLoadManualArmJointByJointController, load_controller)
     executor, ros2_control_test_assets::minimal_robot_urdf, true, "test_controller_manager");
 
   ASSERT_NO_THROW(
-    cm.load_controller("test_arm_controllers", "arm_controllers/ManualArmJointByJointController"));
+    cm.load_controller("test_arm_controllers", "arm_controllers/Manual2DOFWristJointByJointController"));
 
   rclcpp::shutdown();
 }

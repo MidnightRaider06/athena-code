@@ -19,7 +19,6 @@
 #include "control_msgs/msg/joint_jog.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 
-
 namespace arm_controllers
 {
 // name constants for state interfaces
@@ -71,9 +70,6 @@ public:
   ATHENA_ARM_CONTROLLERS__VISIBILITY_PUBLIC
   controller_interface::return_type update(
     const rclcpp::Time & time, const rclcpp::Duration & period) override;
-    
-  ATHENA_ARM_CONTROLLERS__VISIBILITY_PUBLIC
-  void logger_function();
 
   // TODO(anyone): replace the state and command message types
   using ControllerReferenceMsg = sensor_msgs::msg::Joy;
@@ -85,14 +81,15 @@ protected:
   manual_arm_joint_by_joint_controller::Params params_;
 
   int num_joints;
-  bool actuator_active_ = false;
-  double actuator_iterator = 0.0;
 
   // Represents velocities of each joint
   std::vector<double> joint_velocities_;
 
   // Represents maximum velocities of each joint
   std::vector<double> max_velocities_;
+
+  // Virtual four-bar ratio applied as elbow_motor_velocity += ratio * shoulder_motor_velocity.
+  double virtual_four_bar_coupling_ratio_ = -1.0;
 
   // Command subscribers and Controller State publisher
   rclcpp::Subscription<ControllerReferenceMsg>::SharedPtr ref_subscriber_ = nullptr;

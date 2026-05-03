@@ -147,6 +147,11 @@ def launch_setup(context, *args, **kwargs):
         [FindPackageShare(description_package), "rviz", rviz_file]
     )
 
+    controller_switcher_config = PathJoinSubstitution(
+        [FindPackageShare("bringup"), "config", "controller_switcher.yaml"]
+    )
+
+    # -- Additional Configuration Setup --
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
@@ -284,10 +289,11 @@ def launch_setup(context, *args, **kwargs):
             on_exit=[TimerAction(
                 period=3.0,
                 actions=[Node(
-                    package="drive_bringup",
+                    package="bringup",
                     executable="controller_switcher.py",
                     name="controller_switcher",
-                    output="screen"
+                    output="screen",
+                    parameters=[controller_switcher_config]
                 )]
             )],
         )

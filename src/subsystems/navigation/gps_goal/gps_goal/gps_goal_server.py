@@ -13,9 +13,9 @@ import tf2_ros
 from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
 
 from msgs.action import NavigateToGPS
+from msgs.msg import Heading
 from nav2_msgs.action import NavigateToPose
 from geometry_msgs.msg import PoseStamped, Quaternion
-from std_msgs.msg import Float64
 from sensor_msgs.msg import NavSatFix
 
 
@@ -40,7 +40,7 @@ class GPSGoalServer(Node):
         self.origin_lon = None
         self.origin_alt = None
 
-        self.current_heading_deg = None  # compass degrees: 0=North, 90=East, clockwise
+        self.current_heading_rad = None  # ENU radians: 0=East, CCW positive
 
         self.get_logger().info(
             f'GPS Goal Server starting — waiting for first fix on "{gps_topic}" to set ENU origin'
@@ -65,9 +65,9 @@ class GPSGoalServer(Node):
         )
         self.get_logger().info(f'Subscribed to GPS topic: "{gps_topic}"')
 
-        # Subscribe to compass heading published by athena_gps
+        # Subscribe to heading published by mag_heading_node
         self.heading_sub = self.create_subscription(
-            Float64,
+            Heading,
             heading_topic,
             self._heading_callback,
             10
@@ -104,9 +104,12 @@ class GPSGoalServer(Node):
             f'lat={self.origin_lat:.6f}, lon={self.origin_lon:.6f}, alt={self.origin_alt:.2f} m'
         )
 
-    def _heading_callback(self, msg: Float64):
-        self.current_heading_deg = msg.data
-        self.get_logger().debug(f'Heading update: {self.current_heading_deg:.2f} deg (compass)')
+    def _heading_callback(self, msg: Heading):
+        self.current_heading_rad = msg.heading
+        self.get_logger().debug(
+            f'Heading update: {math.degrees(self.current_heading_rad):.2f} deg ENU '
+            f'(compass bearing: {msg.compass_bearing:.2f} deg)'
+        )
 
     def goal_callback(self, goal_request):
         self.get_logger().info(
@@ -122,8 +125,8 @@ class GPSGoalServer(Node):
     def _get_map_to_enu_rotation(self) -> float | None:
         """Compute the rotation angle α (radians) of the map frame's +X axis in ENU.
 
-        Transforms are not REP-103/105 aligned, so we derive the offset dynamically:
-          - yaw_enu  = 90° - heading_deg   (compass→ENU: CCW from East)
+        Derives the offset dynamically:
+          - yaw_enu  = msg.heading (ENU radians, 0=East, CCW positive)
           - yaw_map  = robot yaw in map frame from TF
           - α        = yaw_enu - yaw_map
 
@@ -131,17 +134,15 @@ class GPSGoalServer(Node):
           x_map = east*cos(α) + north*sin(α)
           y_map = -east*sin(α) + north*cos(α)
         """
-        if self.current_heading_deg is None:
+        if self.current_heading_rad is None:
             self.get_logger().warn(
                 'No heading data received yet — cannot compute map<->ENU rotation'
             )
             return None
 
-        # Compass heading → ENU yaw (CCW from +X=East, in radians)
-        yaw_enu_deg = 90.0 - self.current_heading_deg
-        yaw_enu_rad = math.radians(yaw_enu_deg)
+        yaw_enu_rad = self.current_heading_rad
         self.get_logger().info(
-            f'Compass heading: {self.current_heading_deg:.2f} deg  →  ENU yaw: {yaw_enu_deg:.2f} deg'
+            f'ENU yaw from heading: {math.degrees(yaw_enu_rad):.2f} deg'
         )
 
         # Look up robot's yaw in map frame
@@ -170,7 +171,7 @@ class GPSGoalServer(Node):
         alpha = yaw_enu_rad - yaw_map_rad
         self.get_logger().info(
             f'Map→ENU rotation α = yaw_enu - yaw_map = '
-            f'{yaw_enu_deg:.2f} - {math.degrees(yaw_map_rad):.2f} = {math.degrees(alpha):.2f} deg'
+            f'{math.degrees(yaw_enu_rad):.2f} - {math.degrees(yaw_map_rad):.2f} = {math.degrees(alpha):.2f} deg'
         )
         return alpha
 

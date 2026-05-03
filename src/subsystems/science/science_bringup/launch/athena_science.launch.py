@@ -85,7 +85,13 @@ def generate_launch_description():
             Used only if 'use_mock_hardware' parameter is true.",
         )
     )
-
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "deactivate_talon",
+            default_value="false",
+            description="Deactivate the talon joints in the URDF when using mock hardware to prevent excessive CAN flow.",
+        )
+    )
     declared_arguments.append(
         DeclareLaunchArgument(
             "robot_controller",
@@ -104,6 +110,7 @@ def generate_launch_description():
     use_mock_hardware = LaunchConfiguration("use_mock_hardware")
     mock_sensor_commands = LaunchConfiguration("mock_sensor_commands")
     robot_controller = LaunchConfiguration("robot_controller")
+    deactivate_talon = LaunchConfiguration("deactivate_talon")
 
     # Get URDF via xacro
     robot_description_content = Command(
@@ -123,6 +130,8 @@ def generate_launch_description():
             "mock_sensor_commands:=",
             mock_sensor_commands,
             " ",
+            "deactivate_talon:=",
+            deactivate_talon,
         ]
     )
 
@@ -133,6 +142,10 @@ def generate_launch_description():
     )
     rviz_config_file = PathJoinSubstitution(
         [FindPackageShare(description_package), "rviz", "athena_science.rviz"]
+    )
+
+    controller_switcher_config = PathJoinSubstitution(
+        [FindPackageShare("bringup"), "config", "controller_switcher.yaml"]
     )
 
     joystick_config_file = PathJoinSubstitution(
@@ -258,7 +271,8 @@ def generate_launch_description():
                     package="bringup",
                     executable="controller_switcher.py",
                     name="controller_switcher",
-                    output="screen"
+                    output="screen",
+                    parameters=[controller_switcher_config, {"subsystem": "science"}]
                 )]
             )],
         )

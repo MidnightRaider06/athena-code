@@ -1,5 +1,6 @@
 from launch import LaunchDescription, LaunchContext
-from launch.substitutions import Command, FindExecutable, PathJoinSubstitution
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, LaunchConfiguration, PythonExpression
 
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -9,6 +10,17 @@ from moveit_configs_utils import MoveItConfigsBuilder
 
 
 def generate_launch_description():
+
+    declared_arguments = []
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_3dof",
+            default_value="false",
+            description="Enable the joints required for the 3 Degree of Freedom Wrist",
+        )
+    )
+
+    use_3dof = LaunchConfiguration("use_3dof")
 
     joint_state_yaml = PathJoinSubstitution(
         [
@@ -27,9 +39,14 @@ def generate_launch_description():
     robot_kinematics_path = PathJoinSubstitution([FindPackageShare("arm_moveit"),
                                                   "config",
                                                   "kinematics.yaml"])
+    moveit_controllers_config_file = PythonExpression([
+        '"moveit_controllers_3dof.yaml" if "',
+        use_3dof,
+        '" == "true" else "moveit_controllers_2dof.yaml"'
+    ])
     moveit_controllers_config_path = PathJoinSubstitution([FindPackageShare("arm_moveit"),
                                                            "config",
-                                                           "moveit_controllers.yaml"])
+                                                           moveit_controllers_config_file])
     
     # Eventually want to use this, for now the package will be independent
     rviz_config_file = PathJoinSubstitution(
@@ -56,7 +73,7 @@ def generate_launch_description():
         )
         .robot_description(robot_description_path.perform(LaunchContext()))
         .robot_description_semantic("srdf/athena_arm.srdf")
-        .trajectory_execution(file_path="config/moveit_controllers.yaml")
+        .trajectory_execution(file_path=moveit_controllers_config_path.perform(LaunchContext()))
         .planning_scene_monitor(
             publish_robot_description=True, publish_robot_description_semantic=True
         )
@@ -125,4 +142,4 @@ def generate_launch_description():
                 run_move_group_node,
                 hello_moveit_node
             ]
-    return LaunchDescription(nodes)
+    return LaunchDescription(declared_arguments + nodes)
