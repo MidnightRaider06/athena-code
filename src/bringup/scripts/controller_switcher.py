@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
+import os
 import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.duration import Duration
+from rclpy.parameter import Parameter
 import threading
+from ament_index_python.packages import get_package_share_directory
 
 from msgs.srv import SetController
 from controller_manager_msgs.srv import SwitchController, ListControllers
@@ -13,13 +16,31 @@ from controller_manager_msgs.srv import SwitchController, ListControllers
 class ControllerSwitcher(Node):
     def __init__(self):
         super().__init__('controller_switcher')
+        self.declare_parameters(
+            namespace='',
+            parameters=[
+                ('subsystem', Parameter.Type.STRING),
+                ('full_arm', Parameter.Type.STRING_ARRAY),
+                ('arm', Parameter.Type.STRING_ARRAY),
+                ('wrist', Parameter.Type.STRING_ARRAY),
+                ('end_effector', Parameter.Type.STRING_ARRAY)
+            ])
+        self.subsystem = self.get_parameter('subsystem').value
+        self.full_arm_controllers = []
+        self.arm_controllers = []
+        self.wrist_controllers = []
+        self.end_effector_controllers = []
+        
+        # Create separate callback groups
+        self.service_cb_group = ReentrantCallbackGroup()
+        self.client_cb_group = MutuallyExclusiveCallbackGroup()
         
         # Create separate callback groups
         self.service_cb_group = ReentrantCallbackGroup()
         self.client_cb_group = MutuallyExclusiveCallbackGroup()
         
         # Controllers to always keep active or ignore
-        self.always_active = ["joint_state_broadcaster"]
+        self.always_active = ["joint_state_broadcaster", "motor_status_broadcaster"]
         self.ignore_controllers = []
         
         # Lock to prevent concurrent service processing
@@ -104,6 +125,13 @@ class ControllerSwitcher(Node):
             self.get_logger().info(f"Available controllers: {all_controllers}")
             self.get_logger().info(f"Currently active: {active_controllers}")
             
+            if (self.subsystem == 'arm'):
+                param_controllers = self.full_arm_controllers + self.arm_controllers + self.wrist_controllers + self.end_effector_controllers + self.always_active + self.ignore_controllers
+                if set(all_controllers) != set(param_controllers):
+                    missing_controllers = set(all_controllers) - set(param_controllers) 
+                    extra_controllers = set(param_controllers) - set(all_controllers)
+                    self.get_logger().error(f"Controller list from controller_manager does not match expected controllers from parameters! Here are the missing controllers: {missing_controllers} and here are the extra controllers: {extra_controllers}")
+            
             # Check if all requested controllers exist (only if not empty)
             if requested_controllers:
                 missing_controllers = []
@@ -118,27 +146,90 @@ class ControllerSwitcher(Node):
             
             # Build lists for activation/deactivation
             controllers_to_activate = []
-            
-            # If not empty, add requested controllers that aren't already active
-            if requested_controllers:
-                for controller in requested_controllers:
-                    if controller not in active_controllers:
-                        controllers_to_activate.append(controller)
+            controllers_to_deactivate = []
+
             
             # Always ensure joint_state_broadcaster is active
             if "joint_state_broadcaster" not in active_controllers and "joint_state_broadcaster" not in controllers_to_activate:
                 controllers_to_activate.append("joint_state_broadcaster")
+
             
-            # Deactivate logic:
-            # - If empty list: deactivate all except always_active and ignored
-            # - If controllers specified: deactivate all except requested, always_active, and ignored
-            controllers_to_deactivate = []
-            for controller in active_controllers:
-                if controller in self.always_active or controller in self.ignore_controllers:
-                    continue  # Skip protected controllers
-                    
-                if not requested_controllers or controller not in requested_controllers:
-                    controllers_to_deactivate.append(controller)
+            def controller_handler(controller, subsystem_controllers):
+                if controller not in active_controllers:
+                    controllers_to_activate.append(controller)
+                controllers_to_deactivate.extend(
+                    x for x in subsystem_controllers
+                    if x != controller
+                    and x in active_controllers
+                    and x not in self.always_active
+                    and x not in self.ignore_controllers
+                )
+            
+            
+            # Arm specific controller switching logic
+            if self.subsystem == 'arm' and requested_controllers:
+                self.full_arm_controllers = self.get_parameter('full_arm').value
+                self.arm_controllers = self.get_parameter('arm').value
+                self.wrist_controllers = self.get_parameter('wrist').value
+                self.end_effector_controllers = self.get_parameter('end_effector').value
+
+                # Check if any full arm controller is currently active
+                active_full_arm = [c for c in active_controllers if c in self.full_arm_controllers]
+
+                if active_full_arm:
+                    # Option 1: Switching to another full arm controller
+                    if all(c in self.full_arm_controllers for c in requested_controllers):
+                        controllers_to_deactivate.extend(active_full_arm) # Deactivate current active full arm controller(s)
+                        controllers_to_activate.append(requested_controllers[0])  # Assume only one full arm controller can be active at a time
+
+                    # Option 2: Switching to a subgroup setup (must define one from each type)
+                    elif (any(c in self.arm_controllers for c in requested_controllers) and
+                        any(c in self.wrist_controllers for c in requested_controllers) and
+                        any(c in self.end_effector_controllers for c in requested_controllers)):
+                        
+                        controllers_to_deactivate.extend(active_full_arm) # Deactivate current active full arm controller(s)
+                        controllers_to_activate.extend(list(set(requested_controllers)))
+
+                    # Invalid request: not full arm, not complete subgroup
+                    else:
+                        self.get_logger().error("Requested controllers must be either a full arm controller or one from each arm/wrist/end-effector.")
+                        response.success = False
+                        response.message = "Requested controllers must be either a full arm controller or one from each arm/wrist/end-effector."
+                        return response
+
+                else:
+                    for controller in requested_controllers:
+                        if controller in self.always_active or controller in self.ignore_controllers:
+                            continue  # Skip protected controllers
+                        # Activates requested controller if it is part of a subsection 
+                        # and deactivates the rest in the subsection
+                        if controller in self.arm_controllers: 
+                            controller_handler(controller, self.arm_controllers)
+                        elif controller in self.wrist_controllers: 
+                            controller_handler(controller, self.wrist_controllers)
+                        elif controller in self.end_effector_controllers:
+                            controller_handler(controller, self.end_effector_controllers)
+                        elif controller in self.full_arm_controllers:
+                            if controller not in active_controllers:
+                                controllers_to_activate.append(controller)
+                            controllers_to_deactivate = [
+                                c for c in active_controllers
+                                if c not in self.always_active and c not in self.ignore_controllers
+                            ]
+
+            else:
+                # Default behavior (non-arm or empty request)
+                # If not empty, add requested controllers that aren't already active
+                if requested_controllers:
+                    for controller in requested_controllers:
+                        if controller not in active_controllers:
+                            controllers_to_activate.append(controller)
+            
+                for controller in active_controllers:
+                    if controller in self.always_active or controller in self.ignore_controllers:
+                        continue  # Skip protected controllers
+                    if not requested_controllers or controller not in requested_controllers:
+                        controllers_to_deactivate.append(controller)
             
             # Check if already in desired state
             if requested_controllers:
@@ -156,6 +247,12 @@ class ControllerSwitcher(Node):
                     self.get_logger().info("Already in desired state")
                     return response
             
+            # Ensure there are no duplicates in activation/deactivation lists
+            controllers_to_activate = list(set(controllers_to_activate))
+            controllers_to_deactivate = list(set(controllers_to_deactivate))
+
+            print(self.subsystem)
+
             self.get_logger().info(f"Will activate: {controllers_to_activate}")
             self.get_logger().info(f"Will deactivate: {controllers_to_deactivate}")
             

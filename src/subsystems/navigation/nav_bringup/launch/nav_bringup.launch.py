@@ -1,6 +1,7 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.conditions import IfCondition
 from launch.substitutions import (
     Command,
     FindExecutable,
@@ -23,10 +24,13 @@ def generate_launch_description():
     use_dem           = LaunchConfiguration('use_dem')
     use_respawn       = LaunchConfiguration('use_respawn')
     log_level         = LaunchConfiguration('log_level')
+    use_config        = LaunchConfiguration('use_config')
 
     use_localizer = PythonExpression(
         ["'false' if '", use_zed_localizer, "' == 'true' else 'true'"]
     )
+    
+    
 
     robot_description_content = Command([
         PathJoinSubstitution([FindExecutable(name='xacro')]),
@@ -45,6 +49,14 @@ def generate_launch_description():
             'robot_description': robot_description_content,
             'use_sim_time': sim,
         }],
+    )
+    
+    config_gui = Node(
+        package='nav2_config',
+        executable='gui',  
+        name='nav2_config_gui',
+        output='screen',
+        condition=IfCondition(use_config),
     )
 
     navigation_launch_file = os.path.join(
@@ -107,7 +119,14 @@ def generate_launch_description():
             default_value='info',
             description='Log level for nav2 nodes',
         ),
-
+        DeclareLaunchArgument(
+            'use_config',
+            default_value='false',
+            choices=['true', 'false'],
+            description='Launch the Nav2 config GUI',
+        ),
+    
         robot_state_publisher,
         navigation_launch,
+        config_gui,
     ])

@@ -8,6 +8,8 @@
   <xacro:arg name="sim_gazebo_classic" default="true"/>
   <xacro:arg name="sim_gazebo" default="true"/>
   <xacro:arg name="simulation_controllers" default=""/>
+  <xacro:arg name="use_3dof" default="false"/>
+  <xacro:arg name="deactivate_talon" default="false"/>
 
   <!-- Macro Imports -->
   <!-- Import athena_arm macro -->
@@ -17,10 +19,12 @@
   <xacro:include filename="$(find description)/config/mock.ros2_control.xacro" />
 
   <!-- Import smc ros2_control description -->
-  <xacro:include filename="$(find description)/ros2_control/arm/arm.smc.ros2_control.xacro" />
+  <xacro:include filename="$(find description)/ros2_control/arm/arm.smc_2dof.ros2_control.xacro" />
+  <xacro:include filename="$(find description)/ros2_control/arm/arm.smc_3dof.ros2_control.xacro" />
 
   <!-- Import talon ros2_control description -->
-  <xacro:include filename="$(find description)/ros2_control/arm/arm.talon.ros2_control.xacro" /> 
+  <xacro:include filename="$(find description)/ros2_control/arm/arm.talon_2dof.ros2_control.xacro" /> 
+  <xacro:include filename="$(find description)/ros2_control/arm/arm.talon_3dof.ros2_control.xacro" /> 
 
   <!-- Import rmd ros2_control description -->
   <xacro:include filename="$(find description)/ros2_control/arm/arm.rmd.ros2_control.xacro" />
@@ -44,20 +48,15 @@
     <xacro:mock_ros2_control name="mock"/>
   </xacro:if>
   <xacro:unless value="$(arg use_mock_hardware)"> <!-- HARDWARE -->
-    <xacro:smc_ros2_control name="smc"/>
-    <ros2_control name="talon_mock" type="system">
-      <hardware>
-        <plugin>mock_components/GenericSystem</plugin>
-      </hardware>
-      <joint name="gripper_claw">
-        <command_interface name="position"/>
-        <command_interface name="velocity"/>
-        <state_interface name="position">
-          <param name="initial_value">-0.0</param>
-        </state_interface>
-        <state_interface name="velocity"/>
-      </joint>
-    </ros2_control>
+    <xacro:if value="$(arg use_3dof)">
+      <xacro:talon_3dof_ros2_control name="talon" deactivate_talon="$(arg deactivate_talon)"/>
+      <xacro:smc_3dof_ros2_control name="smc"/> 
+    </xacro:if>
+    <xacro:unless value="$(arg use_3dof)">
+      <xacro:talon_2dof_ros2_control name="talon" deactivate_talon="$(arg deactivate_talon)"/>
+      <xacro:smc_2dof_ros2_control name="smc"/> 
+    </xacro:unless>
+
     <xacro:rmd_ros2_control name="rmd"/>
     <xacro:servo_ros2_control name="servo"/>
     <!-- <xacro:odrive_ros2_control name="odrive"/> -->

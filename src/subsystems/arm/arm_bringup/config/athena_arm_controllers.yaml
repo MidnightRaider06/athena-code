@@ -5,7 +5,10 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
     
-    joint_trajectory_controller:
+    twodof_joint_trajectory_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    threedof_joint_trajectory_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
     arm_velocity_controller:
@@ -17,11 +20,20 @@ controller_manager:
     manual_arm_joint_by_joint_controller:
       type: arm_controllers/ManualArmJointByJointController
 
+    manual_2dof_wrist_joint_by_joint_controller:
+      type: arm_controllers/Manual2DOFWristJointByJointController
+
+    manual_3dof_wrist_joint_by_joint_controller:
+      type: arm_controllers/Manual3DOFWristJointByJointController
+
+    manual_end_effector_gripper_claw_controller:
+      type: arm_controllers/ManualEndEffectorGripperClawController
+
     motor_status_broadcaster:
       type: general_controllers/MotorStatusBroadcaster
     
 
-joint_trajectory_controller:
+twodof_joint_trajectory_controller:
   ros__parameters:
     joints:
       - base_yaw
@@ -73,6 +85,41 @@ joint_trajectory_controller:
       #   trajectory: 0.05
       #   goal: 0.03
 
+threedof_joint_trajectory_controller:
+  ros__parameters:
+    joints:
+      - base_yaw
+      - shoulder_pitch
+      - elbow_pitch
+      - wrist_motor_a
+      - wrist_motor_b
+      - wrist_motor_c
+      - gripper_claw
+      - actuator
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+      - velocity
+
+    action_monitor_rate: 20.0         # Rate to monitor status changes when the controller is executing action
+
+    allow_partial_joints_goal: true
+
+    # Open loop:The controller ignores the states provided by hardware interface but using 
+    # last commands as states for starting the trajectory interpolation
+    # deactivates the feedback control
+    open_loop_control: true 
+    constraints:
+      # Velocity tolerance for at the end of the trajectory that indicates that controlled system is stopped.
+      stopped_velocity_tolerance: 0.01 
+
+      # Time tolerance for achieving trajectory goal before or after commanded time. 
+      # If set to zero, the controller will wait a potentially infinite amount of time.
+      goal_time: 10.0
+
 arm_velocity_controller:
   ros__parameters:
     joints:
@@ -103,23 +150,50 @@ manual_arm_cylindrical_controller:
 
 manual_arm_joint_by_joint_controller:
   ros__parameters:
-    velocity_joints:
+    joints:
       - base_yaw
       - shoulder_pitch
       - elbow_pitch
-      - wrist_pitch
-      - wrist_roll
-      - gripper_claw
-    position_joints:
-      - actuator
     # interface_name: velocity
     joint_max_velocities:
       - 0.08       # base_yaw
       - 0.05148721  # 2.95 dps
       - 0.05148721
+    virtual_four_bar_coupling_ratio: -1.0
+
+manual_2dof_wrist_joint_by_joint_controller:
+  ros__parameters:
+    joints:
+      - wrist_pitch
+      - wrist_roll
+    # interface_name: velocity
+    joint_max_velocities:
       - 0.785398    # 45 dps
       - 0.785398
+
+manual_3dof_wrist_joint_by_joint_controller:
+  ros__parameters:
+    joints:
+      - wrist_motor_a
+      - wrist_motor_b
+      - wrist_motor_c
+    # interface_name: velocity
+    joint_max_velocities:
+      - 0.785398    # TODO
+      - 0.785398    # TODO
+      - 0.785398    # TODO
+
+manual_end_effector_gripper_claw_controller:
+  ros__parameters:
+    velocity_joints:
+      - gripper_claw
+    position_joints:
+      - actuator
+    # interface_name: velocity
+    joint_max_velocities:
       - 0.005       # TODO: Find this
+      - 0.03        # Actuator max displacement
+    joint_max_positions:
       - 0.03        # Actuator max displacement
 
 motor_status_broadcaster:
@@ -128,8 +202,6 @@ motor_status_broadcaster:
       - base_yaw
       - shoulder_pitch
       - elbow_pitch
-      - wrist_pitch
-      - wrist_roll
     interfaces:
       - motor_temperature
       - torque_current
