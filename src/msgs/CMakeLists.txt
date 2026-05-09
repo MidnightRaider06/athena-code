@@ -23,6 +23,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/WaypointEntry.msg"
   "msg/WaypointManagerState.msg"
   "srv/SetController.srv"
+  "srv/AddWaypoint.srv"
   "srv/ClearWaypoints.srv"
   "action/NavigateToGPS.action"
   "action/NavigateToWaypoint.action"
