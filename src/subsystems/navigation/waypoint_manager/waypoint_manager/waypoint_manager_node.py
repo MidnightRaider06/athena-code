@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import os
+import yaml
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer, ActionClient, GoalResponse, CancelResponse
@@ -12,7 +14,7 @@ from std_msgs.msg import String
 from sensor_msgs.msg import NavSatFix
 
 from msgs.msg import WaypointEntry, WaypointManagerState
-from msgs.srv import ClearWaypoints
+from msgs.srv import AddWaypoint, ClearWaypoints
 from msgs.action import NavigateToGPS, NavigateToWaypoint
 
 
@@ -20,14 +22,14 @@ class WaypointManagerNode(Node):
     def __init__(self):
         super().__init__('waypoint_manager')
 
-        # In-memory store: uint32 id → {id, latitude, longitude, altitude, timestamp}
+        # In-memory store: uint32 id → {id, latitude, longitude, timestamp}
         self._waypoints: dict[int, dict] = {}
         self._wp_counter = 0
 
         self._latest_gps: NavSatFix | None = None
         self._seen_goal_statuses: dict[bytes, int] = {}
 
-        self._nav_status = 'idle'
+        self._nav_status = WaypointManagerState.STATUS_IDLE
         self._active_waypoint_id = 0  # 0 = none
         self._current_nav_goal_handle = None
 
@@ -37,11 +39,19 @@ class WaypointManagerNode(Node):
         self.declare_parameter('nav_mode_topic', '/nav_mode')
         self.declare_parameter('nav2_status_topic', '/navigate_to_pose/_action/status')
         self.declare_parameter('navigate_to_gps_action', 'navigate_to_gps')
+        self.declare_parameter('waypoints_file', os.path.expanduser('~/.ros/waypoints.yaml'))
+        self.declare_parameter('load_from_file', True)
 
         gps_topic = self.get_parameter('gps_topic').value
         nav_mode_topic = self.get_parameter('nav_mode_topic').value
         nav2_status_topic = self.get_parameter('nav2_status_topic').value
         navigate_to_gps_action = self.get_parameter('navigate_to_gps_action').value
+        self._waypoints_file = os.path.expanduser(
+            self.get_parameter('waypoints_file').value
+        )
+
+        if self.get_parameter('load_from_file').value:
+            self._load_waypoints()
 
         # QoS must match NavSelector (transient_local, reliable, depth=1)
         nav_mode_qos = QoSProfile(
@@ -67,6 +77,7 @@ class WaypointManagerNode(Node):
         )
         self.get_logger().info(f'Subscribed to {nav2_status_topic}')
 
+        self.create_service(AddWaypoint, '~/add_waypoint', self._add_waypoint_cb)
         self.create_service(ClearWaypoints, '~/clear_waypoints', self._clear_waypoints_cb)
 
         self._nav_action_server = ActionServer(
@@ -87,6 +98,53 @@ class WaypointManagerNode(Node):
         )
 
         self.get_logger().info('WaypointManager ready')
+
+    # ── File persistence ──────────────────────────────────────────────────────
+
+    def _load_waypoints(self):
+        if not os.path.exists(self._waypoints_file):
+            self.get_logger().info(f'No waypoints file at {self._waypoints_file}, starting empty')
+            return
+        try:
+            with open(self._waypoints_file, 'r') as f:
+                data = yaml.safe_load(f)
+            if not data:
+                return
+            self._wp_counter = int(data.get('counter', 0))
+            for wp_id, d in data.get('waypoints', {}).items():
+                wp_id = int(wp_id)
+                self._waypoints[wp_id] = {
+                    'id': wp_id,
+                    'latitude': float(d['latitude']),
+                    'longitude': float(d['longitude']),
+                    'timestamp': d.get('timestamp', {'sec': 0, 'nanosec': 0}),
+                }
+            self.get_logger().info(
+                f'Loaded {len(self._waypoints)} waypoint(s) from {self._waypoints_file}'
+            )
+        except Exception as e:
+            self.get_logger().error(f'Failed to load waypoints file: {e}')
+
+    def _save_waypoints(self):
+        data = {
+            'counter': self._wp_counter,
+            'waypoints': {
+                wp_id: {
+                    'latitude': d['latitude'],
+                    'longitude': d['longitude'],
+                    'timestamp': d['timestamp'],
+                }
+                for wp_id, d in self._waypoints.items()
+            },
+        }
+        tmp = self._waypoints_file + '.tmp'
+        try:
+            os.makedirs(os.path.dirname(self._waypoints_file), exist_ok=True)
+            with open(tmp, 'w') as f:
+                yaml.dump(data, f)
+            os.replace(tmp, self._waypoints_file)
+        except Exception as e:
+            self.get_logger().error(f'Failed to save waypoints file: {e}')
 
     # ── GPS fix cache ─────────────────────────────────────────────────────────
 
@@ -122,13 +180,13 @@ class WaypointManagerNode(Node):
             'id': wp_id,
             'latitude': gps.latitude,
             'longitude': gps.longitude,
-            'altitude': gps.altitude,
             'timestamp': {'sec': now.sec, 'nanosec': now.nanosec},
         }
         self.get_logger().info(
             f'Nav2 goal succeeded — stored waypoint {wp_id} at '
             f'({gps.latitude:.6f}, {gps.longitude:.6f})'
         )
+        self._save_waypoints()
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -137,7 +195,6 @@ class WaypointManagerNode(Node):
         msg.id = d['id']
         msg.latitude = float(d['latitude'])
         msg.longitude = float(d['longitude'])
-        msg.altitude = float(d['altitude'])
         ts = d.get('timestamp', {})
         msg.timestamp.sec = int(ts.get('sec', 0))
         msg.timestamp.nanosec = int(ts.get('nanosec', 0))
@@ -153,12 +210,33 @@ class WaypointManagerNode(Node):
         msg.last_update = self.get_clock().now().to_msg()
         self._state_pub.publish(msg)
 
-    # ── Service callbacks ─────────────────────────────────────────────────────
+    # ── Service callbacks ──────────────────────────────────────────────────────
+
+    def _add_waypoint_cb(self, request, response):
+        now = self.get_clock().now().to_msg()
+        self._wp_counter += 1
+        wp_id = self._wp_counter
+        self._waypoints[wp_id] = {
+            'id': wp_id,
+            'latitude': request.latitude,
+            'longitude': request.longitude,
+            'timestamp': {'sec': now.sec, 'nanosec': now.nanosec},
+        }
+        self._save_waypoints()
+        self.get_logger().info(
+            f'Manually added waypoint {wp_id} at '
+            f'({request.latitude:.6f}, {request.longitude:.6f})'
+        )
+        response.success = True
+        response.message = f'Added waypoint {wp_id}'
+        response.assigned_id = wp_id
+        return response
 
     def _clear_waypoints_cb(self, request, response):
         count = len(self._waypoints)
         self._waypoints.clear()
         self._wp_counter = 0
+        self._save_waypoints()
         response.success = True
         response.message = f'Cleared {count} waypoint(s)'
         self.get_logger().info(f'Cleared {count} waypoint(s)')
@@ -167,7 +245,7 @@ class WaypointManagerNode(Node):
     # ── Action callbacks ──────────────────────────────────────────────────────
 
     def _goal_callback(self, goal_request):
-        if self._nav_status == 'navigating':
+        if self._nav_status == WaypointManagerState.STATUS_NAVIGATING:
             self.get_logger().warn('Goal rejected: navigation already in progress')
             return GoalResponse.REJECT
         return GoalResponse.ACCEPT
@@ -191,7 +269,7 @@ class WaypointManagerNode(Node):
 
         wp = self._waypoints[wp_id]
         self._active_waypoint_id = wp_id
-        self._nav_status = 'navigating'
+        self._nav_status = WaypointManagerState.STATUS_NAVIGATING
         self._nav_mode_pub.publish(String(data='GNSS'))
 
         self.get_logger().info(
@@ -207,7 +285,7 @@ class WaypointManagerNode(Node):
 
         if not self._gps_client.wait_for_server(timeout_sec=5.0):
             self.get_logger().error('navigate_to_gps server not available')
-            self._nav_status = 'failed'
+            self._nav_status = WaypointManagerState.STATUS_FAILED
             self._active_waypoint_id = 0
             goal_handle.abort()
             result.success = False
@@ -224,7 +302,7 @@ class WaypointManagerNode(Node):
 
         if not nav_goal_handle.accepted:
             self.get_logger().error('Goal rejected by navigate_to_gps server')
-            self._nav_status = 'failed'
+            self._nav_status = WaypointManagerState.STATUS_FAILED
             self._active_waypoint_id = 0
             goal_handle.abort()
             result.success = False
@@ -238,7 +316,7 @@ class WaypointManagerNode(Node):
             self._current_nav_goal_handle = None
 
         if goal_handle.is_cancel_requested:
-            self._nav_status = 'idle'
+            self._nav_status = WaypointManagerState.STATUS_CANCELED
             self._active_waypoint_id = 0
             goal_handle.canceled()
             result.success = False
@@ -246,17 +324,17 @@ class WaypointManagerNode(Node):
             return result
 
         if nav_result.status == GoalStatus.STATUS_SUCCEEDED:
-            self._nav_status = 'success'
+            self._nav_status = WaypointManagerState.STATUS_SUCCEEDED
             goal_handle.succeed()
             result.success = True
             result.message = f'Reached waypoint {wp_id}'
         elif nav_result.status == GoalStatus.STATUS_CANCELED:
-            self._nav_status = 'idle'
+            self._nav_status = WaypointManagerState.STATUS_CANCELED
             goal_handle.canceled()
             result.success = False
             result.message = 'Navigation canceled'
         else:
-            self._nav_status = 'failed'
+            self._nav_status = WaypointManagerState.STATUS_FAILED
             self.get_logger().warn(
                 f'Navigation to waypoint {wp_id} failed (status={nav_result.status})'
             )
