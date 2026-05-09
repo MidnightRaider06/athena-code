@@ -7,7 +7,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
-#include "msgs/msg/heading.hpp"
 #include <mavsdk/mavsdk.h>
 #include <mavsdk/plugins/telemetry/telemetry.h>
 
@@ -21,7 +20,6 @@ public:
     : Node("athena_gps"),
       last_gps_info_{},
       last_attitude_quaternion_{},
-      last_heading_deg_{},
       is_initialized_(false),
       connection_added_(false)
     {
@@ -33,7 +31,6 @@ public:
         this->declare_parameter("gps_frame_id", "gps_link");
         this->declare_parameter("imu_topic", "imu/data");
         this->declare_parameter("gps_topic", "gps/fix");
-        this->declare_parameter("heading_topic", "heading");
         this->declare_parameter("mavsdk_system_id", 10);
         this->declare_parameter("mavsdk_component_id", 1);
         this->declare_parameter("mavsdk_always_send_heartbeats", false);
@@ -46,7 +43,6 @@ public:
         gps_frame_id_ = this->get_parameter("gps_frame_id").as_string();
         std::string imu_topic = this->get_parameter("imu_topic").as_string();
         std::string gps_topic = this->get_parameter("gps_topic").as_string();
-        std::string heading_topic = this->get_parameter("heading_topic").as_string();
         int mavsdk_system_id = this->get_parameter("mavsdk_system_id").as_int();
         int mavsdk_component_id = this->get_parameter("mavsdk_component_id").as_int();
         bool mavsdk_always_send_heartbeats = this->get_parameter("mavsdk_always_send_heartbeats").as_bool();
@@ -54,7 +50,6 @@ public:
         // Create publishers unconditionally so they're always valid
         imu_publisher_ = this->create_publisher<sensor_msgs::msg::Imu>(imu_topic, 10);
         gps_publisher_ = this->create_publisher<sensor_msgs::msg::NavSatFix>(gps_topic, 10);
-        heading_publisher_ = this->create_publisher<msgs::msg::Heading>(heading_topic, 10);
 
         // Create MAVSDK instance
         mavsdk_ = std::make_unique<Mavsdk>(Mavsdk::Configuration{
@@ -78,12 +73,10 @@ private:
 
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_publisher_;
     rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr gps_publisher_;
-    rclcpp::Publisher<msgs::msg::Heading>::SharedPtr heading_publisher_;
     rclcpp::TimerBase::SharedPtr init_timer_;
 
     Telemetry::GpsInfo last_gps_info_;
     Telemetry::Quaternion last_attitude_quaternion_;
-    double last_heading_deg_;
 
     std::string imu_frame_id_;
     std::string gps_frame_id_;
@@ -272,14 +265,6 @@ private:
         } else {
             gps_msg.position_covariance_type = sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
         }
-        auto heading_msg = msgs::msg::Heading();
-        heading_msg.header.stamp = this->now();
-        heading_msg.compass_bearing = raw_gps.yaw_deg;
-        // Convert from compass bearing (0=magnetic North, CW, degrees) to ROS convention (0=East, CCW, radians)
-        heading_msg.heading = (90.0 - raw_gps.yaw_deg) * M_PI / 180.0;
-        heading_msg.heading_acc = raw_gps.heading_uncertainty_deg * M_PI / 180.0;
-
-        heading_publisher_->publish(heading_msg);
         gps_publisher_->publish(gps_msg);
     }
 };

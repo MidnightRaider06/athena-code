@@ -61,7 +61,7 @@ manual_arm_joint_by_joint_controller:
 
   virtual_four_bar_coupling_ratio: {
     type: double,
-    default_value: -1.0,
+    default_value: 1.0,
     description: "Virtual four-bar ratio applied as elbow_motor_velocity += ratio * shoulder_motor_velocity.",
     read_only: true,
   }

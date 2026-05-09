@@ -83,6 +83,7 @@ void SMCHardwareInterface::logger_function(){
     oss << "\nJOINT: " << info_.joints[i].name << "\n"
         << "Parameters: CAN ID: 0x" << std::hex << std::uppercase << joint_node_ids[i]
         << " | Gear Ratio: " << joint_gear_ratios[i] << "\n"
+        << " | Orientation: " << joint_orientation[i] << "\n"
         << "-- Commands --\n"
         << "Control Mode: " << control_mode << "\n"
         << "Motor Position: " << motor_position[i]
@@ -115,6 +116,7 @@ hardware_interface::CallbackReturn SMCHardwareInterface::on_init(
     int gear_ratio = std::abs(std::stoi(joint.parameters.at("gear_ratio")));
     joint_node_ids.push_back(std::clamp(std::stoi(joint.parameters.at("node_id"), nullptr, 0), 0x141, 0x160));
     joint_gear_ratios.push_back(gear_ratio);
+    joint_orientation.push_back(std::stoi(joint.parameters.at("joint_orientation")) == -1 ? -1 : 1);
     operating_velocity = std::clamp(std::stoi(joint.parameters.at("operating_velocity")), 0, 65*gear_ratio);
   }
 
@@ -374,7 +376,7 @@ hardware_interface::return_type smc_ros2_control::SMCHardwareInterface::write(
       if(control_level_[i] == integration_level_t::POSITION && std::isfinite(joint_command_position_[i])) {
         
         // CALCULATE DESIRED JOINT ANGLE
-        joint_angle = calculate_motor_position_from_desired_joint_position(joint_command_position_[i], joint_gear_ratios[i]);
+        joint_angle = joint_orientation[i]*calculate_motor_position_from_desired_joint_position(joint_command_position_[i], joint_gear_ratios[i]);
         
         // ENCODING CAN MESSAGE
         data[0] = ABSOLUTE_POS_CONTROL_CMD; 
@@ -389,7 +391,7 @@ hardware_interface::return_type smc_ros2_control::SMCHardwareInterface::write(
       else if(control_level_[i] == integration_level_t::VELOCITY && std::isfinite(joint_command_velocity_[i])) {
 
         // CALCULATE DESIRED JOINT VELOCITY
-        joint_velocity = calculate_motor_velocity_from_desired_joint_velocity(joint_command_velocity_[i], joint_gear_ratios[i]);
+        joint_velocity = joint_orientation[i]*calculate_motor_velocity_from_desired_joint_velocity(joint_command_velocity_[i], joint_gear_ratios[i]);
    
         // ENCODING CAN MESSAGE
         data[0] = SPEED_CONTROL_CMD;

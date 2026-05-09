@@ -159,7 +159,7 @@ manual_arm_joint_by_joint_controller:
       - 0.08       # base_yaw
       - 0.05148721  # 2.95 dps
       - 0.05148721
-    virtual_four_bar_coupling_ratio: -1.0
+    virtual_four_bar_coupling_ratio: 1.0
 
 manual_2dof_wrist_joint_by_joint_controller:
   ros__parameters:

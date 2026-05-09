@@ -27,7 +27,7 @@ class YoloRosNode(Node):
         super().__init__('yolo_node')
 
         pkg_share = get_package_share_directory('yolo_ros_bt')
-        default_model_path = os.path.join(pkg_share, 'models', 'best9.pt')
+        default_model_path = os.path.join(pkg_share, 'models', 'bestNoPreProcessingStep.pt')
 
         self.declare_parameter('use_sim_time', False)
         self.declare_parameter('conf_thres', 0.5)

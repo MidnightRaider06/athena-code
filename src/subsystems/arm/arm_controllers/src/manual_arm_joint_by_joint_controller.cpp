@@ -190,7 +190,7 @@ controller_interface::return_type ManualArmJointByJointController::update(
     joint_velocities_[0] = ((*current_ref)->buttons[1] == 1) ? 0.0 : (*current_ref)->axes[0] * max_velocities_[0];
 
     // Shoulder Pitch: U/D Left Stick
-    joint_velocities_[1] = ((*current_ref)->buttons[1] == 1) ? 0.0 : -(*current_ref)->axes[1] * max_velocities_[1];
+    joint_velocities_[1] = ((*current_ref)->buttons[1] == 1) ? 0.0 : (*current_ref)->axes[1] * max_velocities_[1];
     
     // Elbow Pitch: U/D Right Stick
     joint_velocities_[2] = (*current_ref)->axes[3] * max_velocities_[2];
@@ -200,7 +200,7 @@ controller_interface::return_type ManualArmJointByJointController::update(
     joint_velocities_.resize(num_joints, 0.0);
   }
 
-  // Virtual four-bar compensation. With the current -1.0 ratio, shoulder-only motion commands
+  // Virtual four-bar compensation. With the current 1.0 ratio, shoulder-only motion commands
   // the elbow motor equally in the opposite direction so the net elbow joint angle stays fixed.
   joint_velocities_[2] += virtual_four_bar_coupling_ratio_ * joint_velocities_[1];
 

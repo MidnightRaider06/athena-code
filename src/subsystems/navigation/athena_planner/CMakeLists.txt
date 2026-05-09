@@ -21,6 +21,7 @@ add_library(bt_nodes SHARED
   plugins/aruco_detected_node.cpp
   plugins/get_aruco_pose_node.cpp
   plugins/spiral_coverage_action_node.cpp
+  plugins/object_detected_node.cpp
 )
 
 target_compile_definitions(bt_nodes PRIVATE BT_PLUGIN_EXPORT)

@@ -118,6 +118,7 @@ private:
   // Joint specific parameters
   std::vector<int> joint_node_ids;
   std::vector<int> joint_gear_ratios;
+  std::vector<int> joint_orientation;
   std::vector<bool> joint_initialization_;
   
   // Modes for control mode

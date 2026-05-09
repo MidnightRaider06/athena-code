@@ -4,9 +4,12 @@
 #include <memory>
 #include <chrono>
 
-#include "behaviortree_cpp/condition_node.h"
+#include "behaviortree_cpp_v3/condition_node.h"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/bool.hpp"
+
+namespace bt_nodes
+{
 
 class ObjectDetected : public BT::ConditionNode
 {
@@ -20,6 +23,7 @@ public:
   BT::NodeStatus tick() override;
 
 private:
+  void targetFoundCallback(const std_msgs::msg::Bool::SharedPtr msg);
   void callback(const std_msgs::msg::Bool::SharedPtr msg);
 
   rclcpp::Node::SharedPtr node_;
@@ -29,3 +33,4 @@ private:
   rclcpp::Time last_msg_time_;
   bool received_msg_;
 };
+}

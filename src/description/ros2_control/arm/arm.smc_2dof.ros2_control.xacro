@@ -12,7 +12,8 @@
 
       <joint name="base_yaw">
         <param name="node_id">0x148</param>
-        <param name="gear_ratio">-100</param>
+        <param name="gear_ratio">100</param>
+        <param name="joint_orientation">1.0</param>
         <param name="operating_velocity">300</param> <!-- motor dps -->
         <command_interface name="position"/>
         <command_interface name="velocity"/>
@@ -25,6 +26,7 @@
       <joint name="wrist_pitch">
         <param name="node_id">0x145</param>
         <param name="gear_ratio">40</param>
+        <param name="joint_orientation">1.0</param>
         <param name="operating_velocity">1000</param> <!-- motor dps -->
         <command_interface name="position"/>
         <command_interface name="velocity"/>
@@ -37,6 +39,7 @@
       <joint name="wrist_roll">
         <param name="node_id">0x147</param>
         <param name="gear_ratio">40</param>
+        <param name="joint_orientation">1.0</param>
         <param name="operating_velocity">1000</param> <!-- motor dps -->
         <command_interface name="position"/>
         <command_interface name="velocity"/>

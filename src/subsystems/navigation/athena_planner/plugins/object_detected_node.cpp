@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace athena_planner
+namespace bt_nodes
 {
 
 ObjectDetected::ObjectDetected(
@@ -59,10 +59,4 @@ BT::NodeStatus ObjectDetected::tick()
   return target_found_ ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
 }
 
-}  // namespace athena_planner
-
-#include "behaviortree_cpp_v3/bt_factory.h"
-BT_REGISTER_NODES(factory)
-{
-  factory.registerNodeType<athena_planner::ObjectDetected>("ObjectDetected");
-}
+}  
