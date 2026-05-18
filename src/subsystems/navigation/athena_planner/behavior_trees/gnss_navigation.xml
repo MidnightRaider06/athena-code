@@ -1,10 +1,14 @@
 <root>
   <BehaviorTree ID="GNSSNavigation">
-    <PipelineSequence name="NavigateWithReplanning">
-      <RateController hz="5.0">
-        <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
-      </RateController>
-      <FollowPath path="{path}" controller_id="FollowPath"/>
-    </PipelineSequence>
+    <Sequence> 
+      <PipelineSequence name="NavigateWithReplanning">
+        <RateController hz="5.0">
+          <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+        </RateController>
+        <FollowPath path="{path}" controller_id="FollowPath"/>
+      </PipelineSequence>
+
+      <LedStatus color="green" topic_name="/led_status" />
+    </Sequence>
   </BehaviorTree>
 </root>

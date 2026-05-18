@@ -100,6 +100,13 @@ def generate_launch_description():
             description="Robot controller to start.",
         )
     )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "can_interface",
+            default_value="can0",
+            description="CAN interface to use for hardware interfaces.",
+        )
+    )
 
     # Initialize Arguments
     runtime_config_package = LaunchConfiguration("runtime_config_package")
@@ -111,6 +118,7 @@ def generate_launch_description():
     mock_sensor_commands = LaunchConfiguration("mock_sensor_commands")
     robot_controller = LaunchConfiguration("robot_controller")
     deactivate_talon = LaunchConfiguration("deactivate_talon")
+    can_interface = LaunchConfiguration("can_interface")
 
     # Get URDF via xacro
     robot_description_content = Command(
@@ -132,6 +140,9 @@ def generate_launch_description():
             " ",
             "deactivate_talon:=",
             deactivate_talon,
+            " ",
+            "can_interface:=",
+            can_interface,
         ]
     )
 
@@ -190,10 +201,10 @@ def generate_launch_description():
         arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
     )
 
-    motor_status_broadcaster_spawner = Node(
+    motor_status_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["motor_status_broadcaster", "-c", "/controller_manager"],
+        arguments=["motor_status_controller", "-c", "/controller_manager"],
     )
 
     # CONTROLLER MANAGERS
@@ -223,7 +234,7 @@ def generate_launch_description():
         ]
 
     # GPIO controller spawner for Laser
-    gpio_controller_names = ["laser_gpio_controller"]
+    gpio_controller_names = ["laser_gpio_controller", "fluoro_led_gpio_controller"]
     gpio_controller_spawners = []
     for controller in gpio_controller_names:
         gpio_controller_spawners += [
@@ -278,11 +289,11 @@ def generate_launch_description():
         )
     )
 
-    # Delay motor_status_broadcaster (inactive) after joint_state_broadcaster
-    delay_motor_status_broadcaster_after_joint_state_broadcaster = RegisterEventHandler(
+    # Delay motor_status_controller (inactive) after joint_state_broadcaster
+    delay_motor_status_controller_after_joint_state_broadcaster = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=joint_state_broadcaster_spawner,
-            on_exit=[motor_status_broadcaster_spawner],
+            on_exit=[motor_status_controller_spawner],
         )
     )
 
@@ -346,7 +357,7 @@ def generate_launch_description():
             robot_state_pub_node,
             rviz_node,
             delay_joint_state_broadcaster_spawner_after_ros2_control_node,
-            delay_motor_status_broadcaster_after_joint_state_broadcaster,
+            delay_motor_status_controller_after_joint_state_broadcaster,
             # umdloop_can_node,
             controller_switcher_node,
             joystick_publisher,

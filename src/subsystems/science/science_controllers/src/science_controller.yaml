@@ -74,8 +74,8 @@ science_manual:
 
   scoop_spinner:
     type: string
-    default_value: "talon_scoop"
-    description: "Scoop Talon motor controller"
+    default_value: "dc_scoop"
+    description: "Scoop DC motor"
     read_only: true
     validation:
       not_empty<>: null
@@ -94,7 +94,7 @@ science_manual:
 
   auger_spinner:
     type: string
-    default_value: "talon_auger"
+    default_value: "dc_auger"
     description: "(Optional)"
     read_only: false
 

@@ -1,0 +1,9 @@
+<library path="rotary_encoder_ros2_control">
+  <class name="rotary_encoder_ros2_control/RotaryEncoderHardwareInterface"
+         type="rotary_encoder_ros2_control::RotaryEncoderHardwareInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      Rotary encoder hardware interface via ros2_control joint state interfaces.
+    </description>
+  </class>
+</library>

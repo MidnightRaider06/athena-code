@@ -77,3 +77,10 @@ source install/setup.bash
 ros2 service call /set_controller athena_drive_msgs/srv/SetController "{controller_names: [INCLUDE CONTROLLER(S) YOU WANT WITHIN BRACKETS]}"
 ```
 Example: `ros2 service call /set_controller athena_drive_msgs/srv/SetController "{controller_names: [drive_velocity_controller]}"`
+
+ros2 topic pub --once /power_module_gpio_controller/commands control_msgs/msg/DynamicInterfaceGroupValues "
+interface_groups: ['drive_power_module']
+interface_values: 
+- interface_names: ['kill_jetson']
+  values: [1.0] 
+"

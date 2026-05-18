@@ -115,6 +115,13 @@ def generate_launch_description():
             description="Deactivate the talon joints in the URDF when using mock hardware to prevent excessive CAN flow.",
         )
     )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "can_interface",
+            default_value="can0",
+            description="CAN interface to use for hardware interfaces.",
+        )
+    )
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
 
@@ -133,6 +140,7 @@ def launch_setup(context, *args, **kwargs):
     mock_sensor_commands = LaunchConfiguration("mock_sensor_commands")
     use_3dof = LaunchConfiguration("use_3dof")
     deactivate_talon = LaunchConfiguration("deactivate_talon")
+    can_interface = LaunchConfiguration("can_interface")
     
     # -- Building Path Files --
     # Get URDF via xacro.
@@ -191,6 +199,9 @@ def launch_setup(context, *args, **kwargs):
             " ",
             "deactivate_talon:=",
             deactivate_talon,
+            " ",
+            "can_interface:=",
+            can_interface,
         ]
     )
     robot_description = {"robot_description": robot_description_content}
@@ -258,10 +269,18 @@ def launch_setup(context, *args, **kwargs):
         arguments=["joint_state_broadcaster"],
     )
 
-    motor_status_broadcaster_spawner = Node(
+    motor_status_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["motor_status_broadcaster", "-c", "/controller_manager"],
+        arguments=[
+            PythonExpression([
+                '"three_dof_motor_status_controller" if "',
+                use_3dof,
+                '" == "true" else "two_dof_motor_status_controller"'
+            ]),
+            "-c",
+            "/controller_manager",
+        ],
     )
 
     
@@ -313,6 +332,18 @@ def launch_setup(context, *args, **kwargs):
             )
         ]
 
+    active_robot_controller_names = [
+        "rotary_encoder_state_request_controller",
+        "cam_position_controller",
+    ]
+    for controller in active_robot_controller_names:
+        robot_controller_spawners += [
+            Node(
+                package="controller_manager",
+                executable="spawner",
+                arguments=[controller, "-c", "/controller_manager"],
+            )
+        ]
     controller_switcher_node = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=inactive_robot_controller_spawners[-1],
@@ -341,10 +372,10 @@ def launch_setup(context, *args, **kwargs):
         )
     )
 
-    delay_motor_status_broadcaster_after_joint_state_broadcaster = RegisterEventHandler(
+    delay_motor_status_controller_after_joint_state_broadcaster = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=joint_state_broadcaster_spawner,
-            on_exit=[motor_status_broadcaster_spawner],
+            on_exit=[motor_status_controller_spawner],
         )
     )
 
@@ -389,7 +420,7 @@ def launch_setup(context, *args, **kwargs):
         control_node,
         robot_state_pub_node,
         delay_joint_state_broadcaster_spawner_after_ros2_control_node,
-        delay_motor_status_broadcaster_after_joint_state_broadcaster,
+        delay_motor_status_controller_after_joint_state_broadcaster,
         delay_rviz_after_joint_state_broadcaster_spawner,
         controller_switcher_node,
     ] + delay_robot_controller_spawners_after_joint_state_broadcaster_spawner \

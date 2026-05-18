@@ -2,6 +2,7 @@ build/
 install/
 log/
 .vscode/
+.codex
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

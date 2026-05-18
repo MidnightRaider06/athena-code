@@ -85,8 +85,8 @@ controller_interface::CallbackReturn ScienceManual::on_configure(
     params_.pump_b
   };
 
-  talon_joints_.clear();
-  talon_joints_ = {
+  dc_joints_.clear();
+  dc_joints_ = {
     params_.scoop_spinner,
     params_.auger_spinner
   }; 
@@ -246,7 +246,7 @@ controller_interface::CallbackReturn ScienceManual::on_deactivate(
     command_interfaces_[i].set_value(std::numeric_limits<double>::quiet_NaN());
   }
   stepper_pump_joints_.clear();
-  talon_joints_.clear();
+  dc_joints_.clear();
   servo_joints_.clear();
   rack_pinion_joints_.clear();
   state_joints_.clear();
@@ -375,7 +375,7 @@ controller_interface::return_type ScienceManual::update(
   // Stepper motors (position)
   command_interfaces_[IDX_PUMP_A_VELOCITY].set_value(stepper_cmd * (M_PI / 180.0));
   command_interfaces_[IDX_PUMP_B_VELOCITY].set_value(stepper_cmd * (M_PI / 180.0));
-  // Talons (velocity)
+  // DC motors (velocity)
   command_interfaces_[IDX_SAMPLER_LIFT_LEFT_VELOCITY].set_value(sampler_lift_pos_l * (M_PI / 180.0));
   command_interfaces_[IDX_SAMPLER_LIFT_RIGHT_VELOCITY].set_value(sampler_lift_pos_r * (M_PI / 180.0));
   command_interfaces_[IDX_SCOOP_SPINNER_VELOCITY].set_value(scoop_spinner_cmd);

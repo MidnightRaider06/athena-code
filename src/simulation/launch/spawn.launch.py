@@ -22,6 +22,8 @@ ARGUMENTS = [
                           description='Robot namespace'),
     DeclareLaunchArgument('world_name', default_value='',
                           description='World name'),
+    DeclareLaunchArgument('can_interface', default_value='can0',
+                          description='CAN interface to use for hardware interfaces.'),
     
 ]
 
@@ -34,13 +36,16 @@ def generate_launch_description():
     rviz_config_file = os.path.join(pkg_sim, 'rviz', 'sim.rviz')
     
     namespace = LaunchConfiguration('namespace')
+    can_interface = LaunchConfiguration('can_interface')
     robot_name = 'athena'
 
     robot_description_content = Command([
         'xacro ', urdf_file,
         ' use_mock_hardware:=true',
         ' sim_gazebo:=true',
-        f' simulation_controllers:={controllers_file}'
+        f' simulation_controllers:={controllers_file}',
+        ' can_interface:=',
+        can_interface,
     ])
 
     spawn_robot_group_action = GroupAction([

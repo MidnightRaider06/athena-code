@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:macro name="odrive_ros2_control" params="name">
+  <xacro:macro name="odrive_ros2_control" params="name can_interface:=can0">
 
     <ros2_control name="${name}" type="system">
       <hardware>
         <plugin>odrive_ros2_control_plugin/ODriveHardwareInterface</plugin>
-        <param name="can">can0</param>
+        <param name="can">${can_interface}</param>
       </hardware>
 
        <!-- 

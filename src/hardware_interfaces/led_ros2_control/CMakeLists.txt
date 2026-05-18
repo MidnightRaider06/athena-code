@@ -10,6 +10,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   pluginlib
   rclcpp
   rclcpp_lifecycle
+  umdloop_can_library
 )
 
 # find dependencies
@@ -40,6 +41,10 @@ ament_target_dependencies(
   led_ros2_control PUBLIC
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
+
+# Link the library target explicitly to ensure its include dirs and
+# compile definitions are available when building this target.
+target_link_libraries(led_ros2_control PUBLIC umdloop_can_library::umdloop_can_library)
 
 # Export hardware plugins
 pluginlib_export_plugin_description_file(hardware_interface led_hardware_interface.xml)

@@ -1,4 +1,4 @@
-controller_manager:
+/**/controller_manager:
   ros__parameters:
     update_rate: 100  # Hz
 
@@ -15,14 +15,16 @@ controller_manager:
     science_controller:
       type: science_controllers/ScienceManual
 
-    # Laser GPIO Controller (CAN-based)
     laser_gpio_controller:
       type: gpio_controllers/GpioCommandController
 
-    motor_status_broadcaster:
-      type: general_controllers/MotorStatusBroadcaster
+    fluoro_led_gpio_controller:
+      type: gpio_controllers/GpioCommandController
 
-joint_group_position_controller:                
+    motor_status_controller:
+      type: general_controllers/MotorStatusController
+
+/**/joint_group_position_controller:
   ros__parameters:
     joints:
       - stepper_motor_a
@@ -31,14 +33,14 @@ joint_group_position_controller:
       - servo_rack_and_pinion_r
       - servo_scoop_a
       - servo_scoop_b
-      - talon_scoop
+      - dc_scoop
       - servo_sampler_lift_l
       - servo_sampler_lift_l
-      - talon_auger
+      - dc_auger
       - servo_auger_lift
     interface_name: position
 
-joint_group_velocity_controller:                 
+/**/joint_group_velocity_controller:
   ros__parameters:
     joints:
       - stepper_motor_a
@@ -47,14 +49,14 @@ joint_group_velocity_controller:
       - servo_rack_and_pinion_r
       - servo_scoop_a
       - servo_scoop_b
-      - talon_scoop
+      - dc_scoop
       - servo_sampler_lift_l
       - servo_sampler_lift_r
-      - talon_auger
+      - dc_auger
       - servo_auger_lift
     interface_name: velocity
 
-science_controller:
+/**/science_controller:
   ros__parameters:
     # Pumps
     pump_a: "stepper_motor_a"
@@ -66,19 +68,19 @@ science_controller:
     
     # Scoops
     scoop_servos: ["servo_scoop_a", "servo_scoop_b"]
-    scoop_spinner: "talon_scoop"
+    scoop_spinner: "dc_scoop"
 
     # Sampler
     sampler_lift_l: "servo_sampler_lift_l"
     sampler_lift_r: "servo_sampler_lift_r"
-    auger_spinner: "talon_auger"
+    auger_spinner: "dc_auger"
     cap: "servo_auger_lift"
     interface_name: position 
     command_interfaces: [position, velocity]
     state_interfaces: [position, velocity]
 
 # Laser GPIO Controller Configuration
-laser_gpio_controller:
+/**/laser_gpio_controller:
   ros__parameters:
     gpios:
       - spectrometry_laser
@@ -93,14 +95,106 @@ laser_gpio_controller:
           - temperature
           - is_connected
 
-motor_status_broadcaster:
+/**/fluoro_led_gpio_controller:
+  ros__parameters:
+    gpios:
+      - fluoro_led
+    command_interfaces:
+      fluoro_led:
+        interfaces:
+          - intensity
+
+# Default command interfaces: 
+# - status_request
+# - maintenance_request
+# - maintenance_frame_high
+# - maintenance_frame_low
+# - maintenance_data_count
+
+# Default state interfaces:
+# - motor_temperature
+# - torque_current
+# - status
+/**/motor_status_controller:
   ros__parameters:
     joints:
       - stepper_motor_a
       - stepper_motor_b
-      - talon_lift
-      - talon_scoop
-    interfaces:
-      - motor_temperature
-      - torque_current
+      - servo_rack_and_pinion_l
+      - servo_rack_and_pinion_r
+      - servo_scoop_a
+      - servo_scoop_b
+      - dc_scoop
+      - servo_sampler_lift_l
+      - servo_sampler_lift_r
+      - dc_auger
+      - servo_auger_lift
+    gpios:
+      - spectrometry_laser
+      - fluoro_led
+      - science_limit_switch
+    command_interfaces:
+      spectrometry_laser:
+        interfaces:
+          - status_request
+      fluoro_led:
+        interfaces:
+          - status_request
+      science_limit_switch:
+        interfaces:
+          - status_request
+      dc_scoop:
+        interfaces:
+          - status_request
+          - maintenance_request
+          - maintenance_frame_high
+          - maintenance_frame_low
+          - maintenance_data_count
+      dc_auger:
+        interfaces:
+          - status_request
+          - maintenance_request
+          - maintenance_frame_high
+          - maintenance_frame_low
+          - maintenance_data_count
+    state_interfaces:
+      stepper_motor_a:
+        interfaces:
+          - status
+      stepper_motor_b:
+        interfaces:
+          - status
+      servo_rack_and_pinion_l:
+        interfaces:
+          - status
+      servo_rack_and_pinion_r:
+        interfaces:
+          - status
+      servo_scoop_a:
+        interfaces:
+          - status
+      servo_scoop_b:
+        interfaces:
+          - status
+      dc_scoop:
+        interfaces:
+          - status
+      servo_sampler_lift_l:
+        interfaces:
+          - status
+      servo_sampler_lift_r:
+        interfaces:
+          - status
+      dc_auger:
+        interfaces:
+          - status
+      servo_auger_lift:
+        interfaces:
+          - status
+      fluoro_led:
+        interfaces:
+          - status
+      science_limit_switch:
+        interfaces:
+          - status
     publish_rate: 10.0

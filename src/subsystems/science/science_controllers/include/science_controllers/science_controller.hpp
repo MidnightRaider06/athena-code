@@ -140,6 +140,7 @@ protected:
   std::vector<std::string> talon_joints_;
   std::vector<std::string> servo_joints_;
   std::vector<std::string> rack_pinion_joints_;
+  std::vector<std::string> dc_joints_;
   std::vector<std::string> joints_;
   //std::string talon_auger_;
 

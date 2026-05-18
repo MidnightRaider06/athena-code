@@ -1,0 +1,15 @@
+# request_rate < 0: one-shot
+# request_rate = 0: stop
+# request_rate > 0: request rate in Hz
+
+string joint_name
+int32 request_rate
+uint8 command_id
+
+# payload container
+int32[]   i32_data
+int16[]   i16_data
+uint8[]   u8_data
+---
+bool success
+string message

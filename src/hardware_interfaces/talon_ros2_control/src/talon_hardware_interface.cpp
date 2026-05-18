@@ -1,115 +1,87 @@
 #include "talon_ros2_control/talon_hardware_interface.hpp"
 
-#include <netdb.h>
-#include <sys/socket.h>
+#include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <iostream>
-#include <cstring>
 #include <sstream>
-#include <string>
-#include <limits>
-#include <memory>
-#include <vector>
 
-#include "hardware_interface/system_interface.hpp"
-#include "hardware_interface/lexical_casts.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
+#include "pluginlib/class_list_macros.hpp"
 #include "rclcpp/rclcpp.hpp"
-
-#include "talon_ros2_control/talon_control.h"
 
 namespace talon_ros2_control
 {
-TALONHardwareInterface::TALONHardwareInterface() {
-}
 
-void TALONHardwareInterface::logger_function(){
+TALONHardwareInterface::TALONHardwareInterface() = default;
 
-  // Prevents breaking the logger
-  if (num_joints == 0) return;
+void TALONHardwareInterface::logger_function()
+{
+  if (num_joints == 0) {
+    return;
+  }
 
-  // Building Message
-  std::string log_msg = "\033[2J\033[H \nTALON Logger";
-  std::string control_mode = "";
-  std::string joint_type = "";
   std::ostringstream oss;
-  std::string status;
-  
-  // HWI Specific
-  oss << "\n--- HWI Specific ---\n"
+  oss << "\033[2J\033[H \nTALON Logger"
+      << "\n--- HWI Specific ---\n"
       << "CAN Interface: " << can_interface
       << " | HWI Update Rate: " << update_rate
       << " | Logger Update Rate: " << logger_rate << "\n"
       << "Elapsed Time since first update: " << elapsed_time << "\n"
       << "\n--- Joint Specific ---";
 
-  for (int i = 0; i < num_joints; i++) {
-    if(static_cast<int>(control_level_[i]) == 1) {
-      control_mode = "POSITION";
-    }
-    else if(static_cast<int>(control_level_[i]) == 2) {
-      control_mode = "VELOCITY";
-    }
-    else {
-      control_mode = "UNDEFINED";
-    }
+  for (const auto & joint : TALONJoints_) {
+    const char * control_mode = joint.control_level == integration_level_t::POSITION ? "POSITION" :
+      (joint.control_level == integration_level_t::VELOCITY ? "VELOCITY" : "UNDEFINED");
+    const char * joint_type = joint.joint_type == joint_type_t::PRISMATIC ? "PRISMATIC" : "REVOLUTE";
 
-    if(static_cast<int>(joint_type_[i]) == 0) {
-      joint_type = "REVOLUTE";
-    }
-    else if(static_cast<int>(joint_type_[i]) == 1) {
-      joint_type = "PRISMATIC";
-    }
-
-    oss << "\nJOINT: " << info_.joints[i].name << "\n"
-        << "Parameters: Node ID: 0x" << std::hex << std::uppercase << joint_node_ids[i] << "\n"
+    oss << "\nJOINT: " << joint.name << "\n"
+        << "Parameters: Node ID: 0x" << std::hex << std::uppercase << joint.node_id << std::dec << "\n"
         << "-- Commands --\n"
         << "Control Mode: " << control_mode << "\n"
         << "Joint Type: " << joint_type << "\n"
-        << "Joint Command Position: " << joint_command_position_[i] << "\n"
-        << "Joint Command Velocity: " << joint_command_velocity_[i] << "\n"
+        << "Joint Command Position: " << joint.joint_command_position << "\n"
+        << "Joint Command Velocity: " << joint.joint_command_velocity << "\n"
+        << "Status Request: " << joint.motor_status_req << "\n"
         << "-- State --\n"
-        << "Joint Position: " << joint_state_position_[i] << " | Position in TU: " << getPositionTalonUnits(talon_motors[i]) << " \n"
-        << "Joint Velocity: " << joint_state_velocity_[i] << "\n";
+        << "Joint Position: " << joint.joint_state_position
+        << " | Joint Velocity: " << joint.joint_state_velocity
+        << " | Status: " << joint.motor_status << "\n";
   }
 
-  log_msg += oss.str();
-  RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), log_msg.c_str());
+  RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), "%s", oss.str().c_str());
 }
 
 hardware_interface::CallbackReturn TALONHardwareInterface::on_init(
-  const hardware_interface::HardwareInfo & info) // Info stores all parameters in xacro file
+  const hardware_interface::HardwareInfo & info)
 {
-  if (hardware_interface::SystemInterface::on_init(info) != hardware_interface::CallbackReturn::SUCCESS)
+  if (hardware_interface::SystemInterface::on_init(info) !=
+    hardware_interface::CallbackReturn::SUCCESS)
   {
     return hardware_interface::CallbackReturn::ERROR;
   }
-  
-  // -- Parameters --
+
   can_interface = info_.hardware_parameters.at("can_interface");
   update_rate = std::stoi(info_.hardware_parameters.at("update_rate"));
   logger_rate = std::stoi(info_.hardware_parameters.at("logger_rate"));
   logger_state = std::stoi(info_.hardware_parameters.at("logger_state"));
 
-  for (auto& joint : info_.joints) {
-    joint_node_ids.push_back(std::stoi(joint.parameters.at("node_id")));
-
-    std::string joint_type = joint.parameters.at("joint_type");
-
-    // Revolute or Prismatic
-    if (joint_type == "revolute") {
-      joint_type_.push_back(joint_type_t::REVOLUTE);
-      max_disp.push_back(std::nan("")); // Not used for revolute joints
-    } else if (joint_type == "prismatic" && joint.parameters.count("max_disp")) {
-      joint_type_.push_back(joint_type_t::PRISMATIC);
-      max_disp.push_back(std::abs(std::stod(joint.parameters.at("max_disp"))));
-    } else {
-      RCLCPP_ERROR(rclcpp::get_logger("TALONHardwareInterface"), "Invalid joint_type parameter for joint %s. Must be 'revolute' or 'prismatic'. If prismatic, it must have a 'max_disp' parameter.", joint.name.c_str());
-      return hardware_interface::CallbackReturn::ERROR;
+  TALONJoints_.clear();
+  for (const auto & joint : info_.joints) {
+    std::vector<std::string> state_if_names;
+    for (const auto & si : joint.state_interfaces) {
+      state_if_names.push_back(si.name);
     }
 
-    // Build per-joint motor config (uses MotorConfig defaults if param not specified)
+    std::vector<std::string> command_if_names;
+    for (const auto & ci : joint.command_interfaces) {
+      command_if_names.push_back(ci.name);
+    }
+
+    std::unordered_map<std::string, std::string> params_map;
+    for (const auto & p : joint.parameters) {
+      params_map.emplace(p.first, p.second);
+    }
+
     MotorConfig mc;
     if (joint.parameters.count("encoder_resolution")) {
       mc.encoder_resolution = std::stod(joint.parameters.at("encoder_resolution"));
@@ -141,257 +113,264 @@ hardware_interface::CallbackReturn TALONHardwareInterface::on_init(
     if (joint.parameters.count("config_timeout_ms")) {
       mc.config_timeout_ms = std::stoi(joint.parameters.at("config_timeout_ms"));
     }
-    motor_configs_.push_back(mc);
+
+    const joint_type_t joint_type = joint.parameters.at("joint_type") == "prismatic" ?
+      joint_type_t::PRISMATIC : joint_type_t::REVOLUTE;
+
+    TALONJoints_.push_back(TalonJoint{
+      joint.name,
+      std::stoi(joint.parameters.at("node_id")),
+      joint_type,
+      joint.parameters.count("max_disp") ? std::abs(std::stod(joint.parameters.at("max_disp"))) :
+        std::numeric_limits<double>::quiet_NaN(),
+      mc,
+      nullptr,
+      integration_level_t::POSITION,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      state_if_names,
+      command_if_names,
+      params_map
+    });
   }
 
-  num_joints = static_cast<int>(info_.joints.size());
-
-  // Initializes command and state interface values
-  joint_state_position_.assign(num_joints, 0);
-  joint_state_velocity_.assign(num_joints, 0);
-
-  joint_command_position_.assign(num_joints, 0);
-  joint_command_velocity_.assign(num_joints, 0);
-
-  motor_temperature_.assign(num_joints, 0.0);
-  motor_torque_current_.assign(num_joints, 0.0);
-
-  control_level_.resize(num_joints, integration_level_t::POSITION);
-
+  num_joints = static_cast<int>(TALONJoints_.size());
+  elapsed_update_time = 0.0;
+  elapsed_time = 0.0;
+  elapsed_logger_time = 0.0;
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
 hardware_interface::CallbackReturn TALONHardwareInterface::on_shutdown(
   const rclcpp_lifecycle::State & previous_state)
 {
-  // Reuse cleanup logic which shuts down the motor and then deinitializes shared pointers.
-  // Need this in case on_cleanup never gets called
-  return this->on_cleanup(previous_state);
+  return on_cleanup(previous_state);
 }
 
 std::vector<hardware_interface::StateInterface> TALONHardwareInterface::export_state_interfaces()
 {
   std::vector<hardware_interface::StateInterface> state_interfaces;
+  for (auto & joint : TALONJoints_) {
+    for (const auto & iface : joint.state_interface_names) {
+      double * value = nullptr;
+      if (iface == hardware_interface::HW_IF_POSITION) {
+        value = &joint.joint_state_position;
+      } else if (iface == hardware_interface::HW_IF_VELOCITY) {
+        value = &joint.joint_state_velocity;
+      } else if (iface == "motor_temperature") {
+        value = &joint.motor_temperature;
+      } else if (iface == "torque_current") {
+        value = &joint.motor_torque_current;
+      } else if (iface == "status") {
+        value = &joint.motor_status;
+      }
 
-  for(int i = 0; i < num_joints; i++){
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints[i].name, hardware_interface::HW_IF_POSITION, &joint_state_position_[i]));
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, &joint_state_velocity_[i]));
-
-    // Telemetry interfaces
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints[i].name, "motor_temperature", &motor_temperature_[i]));
-    state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints[i].name, "torque_current", &motor_torque_current_[i]));
+      if (value != nullptr) {
+        state_interfaces.emplace_back(joint.name, iface, value);
+      }
+    }
   }
-
   return state_interfaces;
 }
 
 std::vector<hardware_interface::CommandInterface> TALONHardwareInterface::export_command_interfaces()
 {
   std::vector<hardware_interface::CommandInterface> command_interfaces;
+  for (auto & joint : TALONJoints_) {
+    for (const auto & iface : joint.command_interface_names) {
+      double * value = nullptr;
+      if (iface == hardware_interface::HW_IF_POSITION) {
+        value = &joint.joint_command_position;
+      } else if (iface == hardware_interface::HW_IF_VELOCITY) {
+        value = &joint.joint_command_velocity;
+      } else if (iface == "status_request") {
+        value = &joint.motor_status_req;
+      }
 
-  for(int i = 0; i < num_joints; i++){
-    command_interfaces.emplace_back(hardware_interface::CommandInterface(
-      info_.joints[i].name, hardware_interface::HW_IF_POSITION, &joint_command_position_[i]));
-    command_interfaces.emplace_back(hardware_interface::CommandInterface(
-      info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, &joint_command_velocity_[i]));
+      if (value != nullptr) {
+        command_interfaces.emplace_back(joint.name, iface, value);
+      }
+    }
   }
-
   return command_interfaces;
 }
 
-/*
-* Setup communication with motor (init configs, send first CAN message)
-*/
 hardware_interface::CallbackReturn TALONHardwareInterface::on_configure(
-  const rclcpp_lifecycle::State & /*previous_state*/) {
-    RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), "Beginning configure.");
-
-    for(int i = 0; i < num_joints; i++){
-      TalonSRX *motor = new TalonSRX(joint_node_ids[i], can_interface);
-      talon_motors.push_back(motor);
-      RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"),
-        "talon_motor initialized (node_id=%d, encoder_res=%.1f, gear_ratio=%.2f).",
-        joint_node_ids[i], motor_configs_[i].encoder_resolution, motor_configs_[i].gear_ratio);
-      initMotor(motor, motor_configs_[i], can_interface);
-    }
-
-    RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), "Configure complete.");
-
-    return hardware_interface::CallbackReturn::SUCCESS;
+  const rclcpp_lifecycle::State &)
+{
+  for (auto & joint : TALONJoints_) {
+    joint.motor = new TalonSRX(joint.node_id, can_interface);
+    initMotor(joint.motor, joint.motor_config, can_interface);
+  }
+  return hardware_interface::CallbackReturn::SUCCESS;
 }
 
 hardware_interface::CallbackReturn TALONHardwareInterface::on_cleanup(
-  const rclcpp_lifecycle::State & /*previous_state*/) {
-
-    for(int i = 0; i < num_joints; i++){
-      stopMotor(talon_motors[i], 50);
+  const rclcpp_lifecycle::State &)
+{
+  for (auto & joint : TALONJoints_) {
+    if (joint.motor != nullptr) {
+      stopMotor(joint.motor, 50);
+      delete joint.motor;
+      joint.motor = nullptr;
     }
-
-    return hardware_interface::CallbackReturn::SUCCESS;
+  }
+  return hardware_interface::CallbackReturn::SUCCESS;
 }
 
-void TALONHardwareInterface::enable_system_thread() {
+void TALONHardwareInterface::enable_system_thread()
+{
   while (is_running.load()) {
     ctre::phoenix::unmanaged::Unmanaged::FeedEnable(100);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
 
-/*
-* Activate system
-*/
 hardware_interface::CallbackReturn TALONHardwareInterface::on_activate(
-  const rclcpp_lifecycle::State & /*previous_state*/)
+  const rclcpp_lifecycle::State &)
 {
-  RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), "Activating ...please wait...");
-
   is_running.store(true);
   worker = std::thread(&TALONHardwareInterface::enable_system_thread, this);
-
-  // setPositionFromDisplacement(talon_motor, 0.0, 50); // dangerous atm since this is an incremental encoder, dont want this to crush itself
-
-  RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), "Successfully activated!");
-
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
-/*
-* Deactivate system
-*/
 hardware_interface::CallbackReturn TALONHardwareInterface::on_deactivate(
-  const rclcpp_lifecycle::State & /*previous_state*/)
+  const rclcpp_lifecycle::State &)
 {
-  RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), "Deactivating ...please wait...");
-
-  for(int i = 0; i < num_joints; i++){
-    stopMotor(talon_motors[i], 50);
+  for (auto & joint : TALONJoints_) {
+    if (joint.motor != nullptr) {
+      stopMotor(joint.motor, 50);
+    }
   }
 
   is_running.store(false);
   if (worker.joinable()) {
     worker.join();
   }
-
-  // setPositionFromDisplacement(talon_motor, 0.0, 50); // dangerous atm since this is an incremental encoder, dont want this to crush itself
-
-  RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), "Successfully deactivated!");
-
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
 hardware_interface::return_type TALONHardwareInterface::read(
-  const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
+  const rclcpp::Time &, const rclcpp::Duration &)
 {
-  for(int i = 0; i < num_joints; i++){
-    if (joint_type_[i] == joint_type_t::PRISMATIC) {
-      joint_state_position_[i] = getPositionDistance(talon_motors[i], motor_configs_[i]);   // meters
-      joint_state_velocity_[i] = getLinearVelocity(talon_motors[i], motor_configs_[i]);     // m/s
-    } else {
-      joint_state_position_[i] = getPositionRadians(talon_motors[i], motor_configs_[i]);    // radians
-      joint_state_velocity_[i] = getAngularVelocity(talon_motors[i], motor_configs_[i]);    // rad/s
+  for (auto & joint : TALONJoints_) {
+    if (joint.motor == nullptr) {
+      continue;
     }
 
-    // Telemetry
-    motor_temperature_[i] = talon_motors[i]->GetTemperature();
-    motor_torque_current_[i] = talon_motors[i]->GetOutputCurrent();
+    if (joint.joint_type == joint_type_t::PRISMATIC) {
+      joint.joint_state_position = getPositionDistance(joint.motor, joint.motor_config);
+      joint.joint_state_velocity = getLinearVelocity(joint.motor, joint.motor_config);
+    } else {
+      joint.joint_state_position = getPositionRadians(joint.motor, joint.motor_config);
+      joint.joint_state_velocity = getAngularVelocity(joint.motor, joint.motor_config);
+    }
+
+    joint.motor_temperature = joint.motor->GetTemperature();
+    joint.motor_torque_current = joint.motor->GetOutputCurrent();
+    joint.motor_status = 1.0;
   }
   return hardware_interface::return_type::OK;
 }
 
-hardware_interface::return_type talon_ros2_control::TALONHardwareInterface::write(
-  const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
+hardware_interface::return_type TALONHardwareInterface::write(
+  const rclcpp::Time &, const rclcpp::Duration & period)
 {
-  elapsed_update_time+=period.seconds();
-  double update_period = 1.0/update_rate;
-  elapsed_time+=period.seconds();
-  
-  // Logger update
-  elapsed_logger_time+=period.seconds();
-  double logging_period = 1.0/logger_rate;
-  if(elapsed_logger_time > logging_period){
+  elapsed_update_time += period.seconds();
+  elapsed_time += period.seconds();
+  elapsed_logger_time += period.seconds();
+
+  if (logger_rate > 0 && elapsed_logger_time > (1.0 / static_cast<double>(logger_rate))) {
     elapsed_logger_time = 0.0;
     if (logger_state == 1) {
       logger_function();
     }
   }
 
-  // HWI can only go as fast as the controller manager. To limit frequency of bus messages,
-  // keep track of time passed over iterations of this function and if it exceeds the 
-  // desired frequency of the HWI, skip message
-  if(elapsed_update_time > update_period){
-    elapsed_update_time = 0.0;
-
-    // Motor Command for each joint at given frequency
-    for(int i = 0; i < num_joints; i++){
-      if(control_level_[i] == integration_level_t::POSITION && joint_type_[i] == joint_type_t::PRISMATIC && std::isfinite(joint_command_position_[i])) {
-
-        // TO DO: implement joint limits so i dont gotta do this
-        joint_command_position_[i] = std::clamp(joint_command_position_[i], 0.0, max_disp[i]);
-        // COMMAND PRISMATIC POSITION
-        setPositionFromDisplacement(talon_motors[i], joint_command_position_[i], 50, motor_configs_[i]);
-
-      } else if(control_level_[i] == integration_level_t::VELOCITY && joint_type_[i] == joint_type_t::PRISMATIC && std::isfinite(joint_command_velocity_[i])) {
-
-        // COMMAND PRISMATIC VELOCITY
-        setVelocityFromLinearVelocity(talon_motors[i], joint_command_velocity_[i], 50, motor_configs_[i]);
-
-      } else if(control_level_[i] == integration_level_t::POSITION && joint_type_[i] == joint_type_t::REVOLUTE && std::isfinite(joint_command_position_[i])) {
-
-        // COMMAND REVOLUTE POSITION
-        setPositionFromJointCommand(talon_motors[i], joint_command_position_[i], 50, motor_configs_[i]);
-
-      } else if(control_level_[i] == integration_level_t::VELOCITY && joint_type_[i] == joint_type_t::REVOLUTE && std::isfinite(joint_command_velocity_[i])) {
-
-        // COMMAND REVOLUTE VELOCITY
-        setVelocityFromAngularVelocity(talon_motors[i], joint_command_velocity_[i], 50, motor_configs_[i]);
-
+  for (auto & joint : TALONJoints_) {
+    const double curr_status_req = joint.motor_status_req;
+    if (curr_status_req < 0.0 && joint.prev_status_req >= 0.0) {
+      joint.motor_status = 1.0;
+    } else if (curr_status_req > 0.0) {
+      joint.elapsed_status_request_time += period.seconds();
+      if (joint.elapsed_status_request_time > (1.0 / curr_status_req)) {
+        joint.elapsed_status_request_time = 0.0;
+        joint.motor_status = 1.0;
       }
-      else {
-        // RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), "Joint command value not found or undefined command state");
+    }
+    joint.prev_status_req = curr_status_req;
+  }
+
+  if (update_rate > 0 && elapsed_update_time > (1.0 / static_cast<double>(update_rate))) {
+    elapsed_update_time = 0.0;
+    for (auto & joint : TALONJoints_) {
+      if (joint.motor == nullptr) {
+        continue;
+      }
+
+      if (
+        joint.control_level == integration_level_t::POSITION &&
+        joint.joint_type == joint_type_t::PRISMATIC &&
+        std::isfinite(joint.joint_command_position))
+      {
+        joint.joint_command_position = std::clamp(joint.joint_command_position, 0.0, joint.max_disp);
+        setPositionFromDisplacement(joint.motor, joint.joint_command_position, 50, joint.motor_config);
+      } else if (
+        joint.control_level == integration_level_t::VELOCITY &&
+        joint.joint_type == joint_type_t::PRISMATIC &&
+        std::isfinite(joint.joint_command_velocity))
+      {
+        setVelocityFromLinearVelocity(joint.motor, joint.joint_command_velocity, 50, joint.motor_config);
+      } else if (
+        joint.control_level == integration_level_t::POSITION &&
+        joint.joint_type == joint_type_t::REVOLUTE &&
+        std::isfinite(joint.joint_command_position))
+      {
+        setPositionFromJointCommand(joint.motor, joint.joint_command_position, 50, joint.motor_config);
+      } else if (
+        joint.control_level == integration_level_t::VELOCITY &&
+        joint.joint_type == joint_type_t::REVOLUTE &&
+        std::isfinite(joint.joint_command_velocity))
+      {
+        setVelocityFromAngularVelocity(joint.motor, joint.joint_command_velocity, 50, joint.motor_config);
       }
     }
   }
-  
+
   return hardware_interface::return_type::OK;
 }
 
 hardware_interface::return_type TALONHardwareInterface::perform_command_mode_switch(
-  const std::vector<std::string>& start_interfaces,
-  const std::vector<std::string>& stop_interfaces)
+  const std::vector<std::string> & start_interfaces,
+  const std::vector<std::string> & stop_interfaces)
 {
-  // Debug: print incoming requests
-  std::ostringstream ss;
-  ss << "perform_command_mode_switch called. start_interfaces: [";
-  for (auto &s : start_interfaces) ss << s << ",";
-  ss << "] stop_interfaces: [";
-  for (auto &s : stop_interfaces) ss << s << ",";
-  ss << "]";
-  RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"), ss.str().c_str());
+  std::vector<integration_level_t> requested_modes(
+    static_cast<size_t>(num_joints), integration_level_t::UNDEFINED);
 
-  // For each joint, decide its new control mode based on start/stop interfaces.
-  // We allow partial starts/stops: only affected joints are switched.
-  std::vector<integration_level_t> requested_modes(num_joints, integration_level_t::UNDEFINED);
-
-  // Process stop interfaces first: mark those joints as UNDEFINED
-  for (const auto &ifname : stop_interfaces) {
-    for (int i = 0; i < num_joints; ++i) {
-      const std::string pos_if = info_.joints[i].name + "/" + std::string(hardware_interface::HW_IF_POSITION);
-      const std::string vel_if = info_.joints[i].name + "/" + std::string(hardware_interface::HW_IF_VELOCITY);
-      if (ifname == pos_if || ifname == vel_if || ifname.find(info_.joints[i].name) != std::string::npos) {
+  for (const auto & ifname : stop_interfaces) {
+    for (size_t i = 0; i < TALONJoints_.size(); ++i) {
+      const auto & joint = TALONJoints_[i];
+      const std::string pos_if = joint.name + "/" + hardware_interface::HW_IF_POSITION;
+      const std::string vel_if = joint.name + "/" + hardware_interface::HW_IF_VELOCITY;
+      if (ifname == pos_if || ifname == vel_if || ifname.find(joint.name) != std::string::npos) {
         requested_modes[i] = integration_level_t::UNDEFINED;
       }
     }
   }
 
-  // Process start interfaces: set POSITION or VELOCITY per joint
-  for (const auto &ifname : start_interfaces) {
-    for (int i = 0; i < num_joints; ++i) {
-      const std::string pos_if = info_.joints[i].name + "/" + std::string(hardware_interface::HW_IF_POSITION);
-      const std::string vel_if = info_.joints[i].name + "/" + std::string(hardware_interface::HW_IF_VELOCITY);
+  for (const auto & ifname : start_interfaces) {
+    for (size_t i = 0; i < TALONJoints_.size(); ++i) {
+      const auto & joint = TALONJoints_[i];
+      const std::string pos_if = joint.name + "/" + hardware_interface::HW_IF_POSITION;
+      const std::string vel_if = joint.name + "/" + hardware_interface::HW_IF_VELOCITY;
       if (ifname == pos_if) {
         requested_modes[i] = integration_level_t::POSITION;
       } else if (ifname == vel_if) {
@@ -400,53 +379,36 @@ hardware_interface::return_type TALONHardwareInterface::perform_command_mode_swi
     }
   }
 
-  // Now apply the requested_modes to control_level_.
-  // For any joint with UNDEFINED in requested_modes, we only change it if it was explicitly stopped.
-  for (int i = 0; i < num_joints; ++i) {
+  for (size_t i = 0; i < TALONJoints_.size(); ++i) {
+    auto & joint = TALONJoints_[i];
     if (requested_modes[i] == integration_level_t::UNDEFINED) {
-      // if stop requested, set to UNDEFINED; otherwise leave existing mode
-      // (we only set to UNDEFINED if this joint was mentioned in stop_interfaces)
       bool was_stopped = false;
-      for (const auto &ifname : stop_interfaces) {
-        if (ifname.find(info_.joints[i].name) != std::string::npos) {
+      for (const auto & ifname : stop_interfaces) {
+        if (ifname.find(joint.name) != std::string::npos) {
           was_stopped = true;
           break;
         }
       }
       if (was_stopped) {
-        control_level_[i] = integration_level_t::UNDEFINED;
-        joint_command_velocity_[i] = 0;
-        // optional: reset position cmd to current state to be safe
-        joint_command_position_[i] = joint_state_position_[i];
-        RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"),
-          "Joint %s: stopped -> set UNDEFINED", info_.joints[i].name.c_str());
+        joint.control_level = integration_level_t::UNDEFINED;
+        joint.joint_command_velocity = 0.0;
+        joint.joint_command_position = joint.joint_state_position;
       }
-      // else, leave control_level_ as-is
+      continue;
+    }
+
+    joint.control_level = requested_modes[i];
+    if (joint.control_level == integration_level_t::VELOCITY) {
+      joint.joint_command_velocity = 0.0;
     } else {
-      // Set the mode requested
-      control_level_[i] = requested_modes[i];
-      // If switching to velocity, optionally set command velocity to current state to avoid jumps
-      if (requested_modes[i] == integration_level_t::VELOCITY) {
-        // joint_command_velocity_[i] = joint_state_velocity_[i];
-        joint_command_velocity_[i] = 0;
-        RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"),
-          "Joint %s: switched to VELOCITY (cmd vel initialized from state: %f)",
-          info_.joints[i].name.c_str(), joint_command_velocity_[i]);
-      } else if (requested_modes[i] == integration_level_t::POSITION) {
-        joint_command_position_[i] = joint_state_position_[i];
-        RCLCPP_INFO(rclcpp::get_logger("TALONHardwareInterface"),
-          "Joint %s: switched to POSITION (cmd pos initialized from state: %f)",
-          info_.joints[i].name.c_str(), joint_command_position_[i]);
-      }
+      joint.joint_command_position = joint.joint_state_position;
     }
   }
 
   return hardware_interface::return_type::OK;
 }
 
-}  // namespace talon_hardware_interface
-
-#include "pluginlib/class_list_macros.hpp"
+}  // namespace talon_ros2_control
 
 PLUGINLIB_EXPORT_CLASS(
   talon_ros2_control::TALONHardwareInterface, hardware_interface::SystemInterface)

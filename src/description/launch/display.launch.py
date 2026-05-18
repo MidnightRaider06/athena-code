@@ -10,6 +10,12 @@ import os
 
 def generate_launch_description():
     model_arg = DeclareLaunchArgument('model', default_value='', description='Model argument')
+    can_interface_arg = DeclareLaunchArgument(
+        'can_interface',
+        default_value='can0',
+        description='CAN interface to use for hardware interfaces.',
+    )
+    can_interface = LaunchConfiguration('can_interface')
 
     # Get URDF path
     robot_description_path = PathJoinSubstitution([
@@ -25,6 +31,8 @@ def generate_launch_description():
             " ",
             robot_description_path,
             " use_mock_hardware:=true",
+            " can_interface:=",
+            can_interface,
         ]
     )
 
@@ -120,6 +128,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         model_arg,
+        can_interface_arg,
         robot_state_publisher_node,
         ros2_control_node,
         joint_state_broadcaster_spawner,

@@ -1,41 +1,51 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-    <xacro:macro name="stepper_ros2_control" params="name">
+    <xacro:macro name="stepper_ros2_control" params="name can_interface:=can0">
 
         <ros2_control name="${name}" type="system">
 
             <hardware>
                 <plugin>stepper_ros2_control/STEPPERHardwareInterface</plugin>
+                <param name="update_rate">10</param> <!-- Hz -->
+                <param name="logger_rate">5</param> <!-- Hz -->
+                <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
+                <param name="can_interface">${can_interface}</param>
+                <param name="can_id">0x90</param>
             </hardware>
 
             <joint name="stepper_motor_a">
+                <param name="node_id">0x0</param>
+                <param name="gear_ratio">1</param>
+                <param name="rated_max">20</param>
+                <param name="joint_type">continuous</param>
                 <command_interface name="position"/>
                 <command_interface name="velocity"/>
+                <command_interface name="status_request"/>
+                <command_interface name="maintenance_request"/>
+                <command_interface name="maintenance_frame_high"/>
+                <command_interface name="maintenance_frame_low"/>
+                <command_interface name="maintenance_data_count"/>
                 <state_interface name="position"/>
-                <param name="initial_position">0.0</param>
                 <state_interface name="velocity"/>
-                <state_interface name="motor_temperature"/>
-                <state_interface name="torque_current"/>
-                <param name="gear_ratio">1</param>
-
-                <!-- TEMPORARY PARAMETERS -->
-                <param name="joint_orientation">1</param>
-
+                <state_interface name="status"/>
             </joint>
+
             <joint name="stepper_motor_b">
+                <param name="node_id">0x1</param>
+                <param name="gear_ratio">1</param>
+                <param name="rated_max">20</param>
+                <param name="joint_type">continuous</param>
                 <command_interface name="position"/>
                 <command_interface name="velocity"/>
+                <command_interface name="status_request"/>
+                <command_interface name="maintenance_request"/>
+                <command_interface name="maintenance_frame_high"/>
+                <command_interface name="maintenance_frame_low"/>
+                <command_interface name="maintenance_data_count"/>
                 <state_interface name="position"/>
-                <param name="initial_position">0.0</param>
                 <state_interface name="velocity"/>
-                <state_interface name="motor_temperature"/>
-                <state_interface name="torque_current"/>
-                <param name="gear_ratio">1</param>
-
-                <!-- TEMPORARY PARAMETERS -->
-                <param name="joint_orientation">1</param>
-
+                <state_interface name="status"/>
             </joint>
         
         </ros2_control>

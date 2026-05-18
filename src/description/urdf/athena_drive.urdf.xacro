@@ -3,11 +3,12 @@
 
   <!-- Use this if parameters are set from the launch file, otherwise delete -->
   <xacro:arg name="prefix" default=""/>
-
   <xacro:arg name="use_mock_hardware" default="false"/>
   <xacro:arg name="mock_sensor_commands" default="false"/>
   <xacro:arg name="sim_gazebo" default="true"/>
   <xacro:arg name="simulation_controllers" default=""/>
+  <xacro:arg name="deactivate_odrive" default="false"/>
+  <xacro:arg name="can_interface" default="can0"/>
 
 
   <xacro:include filename="$(find description)/urdf/athena_drive/athena_drive_macro.xacro"/>
@@ -39,8 +40,8 @@
   <!-- Import LED ros2_control description -->
   <xacro:include filename="$(find description)/ros2_control/drive/drive.led.ros2_control.xacro" />
 
-  <!-- Import killswitch ros2_control description -->
-  <xacro:include filename="$(find description)/ros2_control/drive/drive.killswitch.ros2_control.xacro" />
+  <!-- Import power_module ros2_control description -->
+  <xacro:include filename="$(find description)/ros2_control/drive/drive.power_module.ros2_control.xacro" />
 
   <!-- Contains description of drive -->
   <xacro:description/>
@@ -70,14 +71,18 @@
     simulation_controllers="$(arg simulation_controllers)"/>
   </xacro:if>
   <xacro:unless value="$(arg use_mock_hardware)">
-    <xacro:odrive_ros2_control name="odrive"/>
-    <xacro:rmd_ros2_control name="rmd"/>
+
+    <!-- ODrives-->
+    <xacro:odrive_ros2_control name="odrive" deactivate_odrive="$(arg deactivate_odrive)" can_interface="$(arg can_interface)"/>
+
+    <!-- RMD -->
+    <xacro:rmd_ros2_control name="rmd" can_interface="$(arg can_interface)"/>
 
     <!-- LED status indicator (GPIO-based) -->
-    <xacro:led_ros2_control name="status_led" gpio_pin="25"/>
+    <xacro:led_ros2_control name="drive_led" can_interface="$(arg can_interface)"/>
 
-    <!-- Killswitch (CAN-based) -->
-    <xacro:killswitch_ros2_control name="drive_killswitch"/>
+    <!-- PowerModule (CAN-based) -->
+    <xacro:power_module_ros2_control name="drive_power_module" can_interface="$(arg can_interface)"/>
   </xacro:unless>
 
   

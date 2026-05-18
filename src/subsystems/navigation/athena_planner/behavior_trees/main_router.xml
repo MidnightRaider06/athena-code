@@ -10,6 +10,8 @@
 
       <NavSelector topic_name="/nav_mode" default_nav_mode="GNSS" nav_mode="{nav_mode}" />
 
+      <LedStatus color="red" topic_name="/led_status" />
+
       <ReactiveFallback name="SelectMode">
 
         <BlackboardCheckString value_A="{nav_mode}" value_B="GNSS" return_on_mismatch="FAILURE">

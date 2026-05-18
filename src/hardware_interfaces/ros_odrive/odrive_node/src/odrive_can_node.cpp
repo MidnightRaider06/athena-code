@@ -30,7 +30,7 @@ enum ControlMode : uint64_t {
 
 ODriveCanNode::ODriveCanNode(const std::string& node_name) : rclcpp::Node(node_name) {
     
-    rclcpp::Node::declare_parameter<std::string>("interface", "can0");
+    rclcpp::Node::declare_parameter<std::string>("interface", "can1");
     rclcpp::Node::declare_parameter<uint16_t>("node_id", 0);
     rclcpp::Node::declare_parameter<bool>("axis_idle_on_shutdown", false);
 

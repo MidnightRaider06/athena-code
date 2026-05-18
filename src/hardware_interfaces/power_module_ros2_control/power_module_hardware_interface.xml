@@ -1,0 +1,10 @@
+<library path="power_module_ros2_control">
+  <class name="power_module_ros2_control/PowerModuleHardwareInterface"
+         type="power_module_ros2_control::PowerModuleHardwareInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      PowerModule hardware interface via ros2_control.
+      CAN-based power kill commands for main, jetson, and all systems.
+    </description>
+  </class>
+</library>

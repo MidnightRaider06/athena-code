@@ -4,12 +4,17 @@
   <xacro:arg name="use_mock_hardware" default="false"/>
   <xacro:arg name="mock_sensor_commands" default="false"/>
   <xacro:arg name="deactivate_talon" default="false"/>
+  <xacro:arg name="can_interface" default="can0"/>
 
   <xacro:include filename="$(find description)/ros2_control/science/science.mock.ros2_control.xacro"/>
-  <xacro:include filename="$(find description)/ros2_control/science/science.stepper.ros2_control.xacro" />
-  <xacro:include filename="$(find description)/ros2_control/science/science.servo.ros2_control.xacro" />
+
+  <xacro:include filename="$(find description)/ros2_control/science/science.stepper.ros2_control.xacro"/>
+  <xacro:include filename="$(find description)/ros2_control/science/science.servo.ros2_control.xacro"/>
+  <xacro:include filename="$(find description)/ros2_control/science/science.dc.ros2_control.xacro"/>
   <xacro:include filename="$(find description)/ros2_control/science/science.talon.ros2_control.xacro"/>
   <xacro:include filename="$(find description)/ros2_control/science/science.laser.ros2_control.xacro"/>
+  <xacro:include filename="$(find description)/ros2_control/science/science.led.ros2_control.xacro"/>
+  <xacro:include filename="$(find description)/ros2_control/science/science.limit_switch.ros2_control.xacro"/>
   
   <!-- create link fixed to the "world" -->
   <link name="world"/>
@@ -25,16 +30,23 @@
   <xacro:unless value="$(arg use_mock_hardware)">
 
     <!-- Import stepper ros2_control description -->
-    <xacro:stepper_ros2_control name="stepper"/>
+    <xacro:stepper_ros2_control name="stepper" can_interface="$(arg can_interface)"/>
 
     <!-- Import servo ros2_control description -->
-    <xacro:servo_ros2_control name="servo"/>
+    <xacro:servo_ros2_control name="servo" can_interface="$(arg can_interface)"/>
+
+    <!-- Import dc ros2_control description -->
+    <xacro:dc_ros2_control name="dc" can_interface="$(arg can_interface)"/>
 
     <!-- Import talon ros2_control description -->
-    <xacro:talon_ros2_control name="talon" deactivate_talon="$(arg deactivate_talon)"/>
+    <!-- <xacro:talon_ros2_control name="talon" deactivate_talon="$(arg deactivate_talon)" can_interface="$(arg can_interface)"/> -->
 
     <!-- Import laser ros2_control description (CAN-based) -->
-    <xacro:laser_ros2_control name="spectrometry_laser"/>
+    <xacro:laser_ros2_control name="spectrometry_laser" can_interface="$(arg can_interface)"/>
+
+    <!-- Import LED and limit switch ros2_control descriptions -->
+    <xacro:science_led_ros2_control name="fluoro_led_hwi" can_interface="$(arg can_interface)"/>
+    <xacro:science_limit_switch_ros2_control name="science_limit_switch_hwi" can_interface="$(arg can_interface)"/>
   </xacro:unless>
 
 </robot>

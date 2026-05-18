@@ -15,6 +15,7 @@ find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(vision_msgs REQUIRED)
+find_package(msgs REQUIRED)
 
 add_library(bt_nodes SHARED
   plugins/nav_selector_node.cpp
@@ -22,6 +23,7 @@ add_library(bt_nodes SHARED
   plugins/get_aruco_pose_node.cpp
   plugins/spiral_coverage_action_node.cpp
   plugins/object_detected_node.cpp
+  plugins/led_status_node.cpp
 )
 
 target_compile_definitions(bt_nodes PRIVATE BT_PLUGIN_EXPORT)
@@ -42,6 +44,7 @@ ament_target_dependencies(bt_nodes
   tf2
   tf2_geometry_msgs
   vision_msgs
+  msgs
 )
 
 install(TARGETS bt_nodes

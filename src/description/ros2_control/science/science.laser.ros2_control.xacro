@@ -9,13 +9,18 @@
                 <plugin>laser_ros2_control/LaserHardwareInterface</plugin>
                 <param name="can_interface">${can_interface}</param>
                 <param name="can_id">0x130</param>
+                <param name="update_rate">10</param> <!-- Hz -->
+                <param name="logger_rate">5</param> <!-- Hz -->
+                <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
             </hardware>
 
             <gpio name="${name}">
                 <state_interface name="laser_state"/>
                 <state_interface name="temperature"/>
                 <state_interface name="is_connected"/>
+                <state_interface name="status"/>
                 <command_interface name="laser_command"/>
+                <command_interface name="status_request"/>
             </gpio>
 
         </ros2_control>
@@ -23,4 +28,3 @@
     </xacro:macro>
 
 </robot>
-

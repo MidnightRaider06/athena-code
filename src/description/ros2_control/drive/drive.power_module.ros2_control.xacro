@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="power_module_ros2_control" params="name can_interface:=can0">
+
+    <ros2_control name="${name}" type="system">
+      <hardware>
+        <plugin>power_module_ros2_control/PowerModuleHardwareInterface</plugin>
+        <param name="can_interface">${can_interface}</param>
+        <param name="can_id">0x100</param>
+        <param name="update_rate">10</param> <!-- Hz -->
+        <param name="logger_rate">5</param> <!-- Hz -->
+        <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
+      </hardware>
+
+      <gpio name="${name}">
+        <state_interface name="status"/>
+        <state_interface name="kill_all_sent"/>
+        <state_interface name="kill_jetson_sent"/>
+        <state_interface name="kill_main_sent"/>
+        <state_interface name="kill_by_voltage_sent"/>
+        <command_interface name="kill_all"/>
+        <command_interface name="kill_main"/>
+        <command_interface name="kill_jetson"/>
+        <command_interface name="kill_by_voltage"/>
+        <command_interface name="status_request"/>
+      </gpio>
+
+    </ros2_control>
+
+  </xacro:macro>
+
+</robot>

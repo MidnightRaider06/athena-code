@@ -4,7 +4,7 @@ This directory contains ROS2 Control hardware interface implementations for vari
 
 ## Available Interfaces
 
-- `killswitch_ros2_control/` - Killswitch hardware interface
+- `power_module_ros2_control/` - PowerModule hardware interface
 - `laser_ros2_control/` - Laser hardware interface
 - `led_ros2_control/` - LED hardware interface
 - `rmd_ros2_control/` - RMD motor controller interface

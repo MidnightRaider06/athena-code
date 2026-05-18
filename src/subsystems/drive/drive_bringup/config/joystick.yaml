@@ -1,4 +1,5 @@
 /**:
   ros__parameters:
-    # 0: PS4    1: Thrustmaster
+    # 0: PS4    1: Thrustmaster    2: Xbox One    3: 8BitDo Ultimate
     joystick_type: 1
+    joystick_index: -1

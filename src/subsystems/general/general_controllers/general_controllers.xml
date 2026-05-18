@@ -1,9 +1,10 @@
 <library path="general_controllers">
-  <class name="general_controllers/MotorStatusBroadcaster"
-         type="general_controllers::MotorStatusBroadcaster"
+  <class name="general_controllers/MotorStatusController"
+         type="general_controllers::MotorStatusController"
          base_class_type="controller_interface::ControllerInterface">
     <description>
-      Broadcasts motor telemetry (temperature and torque current) as diagnostics.
+      Main functions include broadcasting motor telemetry (temperature, torque current, status, brake status) and sending requests to obtain
+      information about a specific motor.
     </description>
   </class>
 </library>

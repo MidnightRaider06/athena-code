@@ -1,24 +1,12 @@
-// Copyright (c) 2024 UMD Loop
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-
 #ifndef LED_ROS2_CONTROL__LED_HARDWARE_INTERFACE_HPP_
 #define LED_ROS2_CONTROL__LED_HARDWARE_INTERFACE_HPP_
 
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <limits>
+#include <algorithm>
 
 #include "hardware_interface/handle.hpp"
 #include "hardware_interface/hardware_info.hpp"
@@ -28,33 +16,17 @@
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 
+#include "umdloop_can_library/SocketCanBus.hpp"
+#include "umdloop_can_library/CanFrame.hpp"
+
+namespace CANLib 
+{
+  struct CanFrame;
+}
+
 namespace led_ros2_control
 {
 
-// GPIO utility functions (Linux sysfs)
-namespace gpio_utils
-{
-  int setup_gpio_output(int pin);
-  void cleanup_gpio(int pin, int fd);
-  bool write_gpio(int fd, bool value);
-}
-
-/**
- * @brief Hardware interface for LED control via ros2_control
- * 
- * This is a SystemInterface for controlling status LEDs through GPIO.
- * 
- * State Interfaces (read by controllers):
- * - led_state: Current LED state (0.0 = OFF, 1.0 = ON)
- * - is_connected: Is hardware connected and ready (0.0 or 1.0)
- * 
- * Command Interfaces (written by controllers):
- * - led_command: LED command (0.0 = turn OFF, 1.0 = turn ON)
- * 
- * Hardware Parameters (from URDF):
- * - gpio_pin: GPIO pin number for LED output (required)
- * - default_state: "on" or "off" (default: "off")
- */
 class LEDHardwareInterface : public hardware_interface::SystemInterface
 {
 public:
@@ -62,52 +34,77 @@ public:
 
   hardware_interface::CallbackReturn on_init(
     const hardware_interface::HardwareInfo & info) override;
-
   hardware_interface::CallbackReturn on_configure(
     const rclcpp_lifecycle::State & previous_state) override;
 
   std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
-
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
   hardware_interface::CallbackReturn on_activate(
     const rclcpp_lifecycle::State & previous_state) override;
-
   hardware_interface::CallbackReturn on_deactivate(
     const rclcpp_lifecycle::State & previous_state) override;
-
   hardware_interface::CallbackReturn on_cleanup(
     const rclcpp_lifecycle::State & previous_state) override;
-
   hardware_interface::CallbackReturn on_shutdown(
     const rclcpp_lifecycle::State & previous_state) override;
 
   hardware_interface::return_type read(
-    const rclcpp::Time & time,
-    const rclcpp::Duration & period) override;
-
+    const rclcpp::Time & time, const rclcpp::Duration & period) override;
   hardware_interface::return_type write(
-    const rclcpp::Time & time,
-    const rclcpp::Duration & period) override;
+    const rclcpp::Time & time, const rclcpp::Duration & period) override;
+
+  // -- Helper Functions --
+  void send_command(int can_id, int cmd_id);
+  void logger_function();
 
 private:
-  // Configuration parameters
-  int gpio_pin_;
-  bool default_state_;
+  struct LEDGPIO
+  {
+    std::string name;
+    bool is_rgb;
+    uint32_t node_id;
+    double status;
+    double intensity;
+    double red_command;
+    double green_command;
+    double blue_command;
+    double status_request;
+    double prev_status_request;
+    double elapsed_status_request_time;
+    double prev_intensity;
+    double prev_red_command;
+    double prev_green_command;
+    double prev_blue_command;
 
-  // State variables (hardware → ros2_control)
-  double led_state_;      // Current state: 0.0 = OFF, 1.0 = ON
-  double is_connected_;   // Hardware ready status
+    std::vector<std::string> state_interface_names;
+    std::vector<std::string> command_interface_names;
+    std::unordered_map<std::string, std::string> parameters;
+  };
 
-  // Command variables (ros2_control → hardware)
-  double led_command_;    // Commanded state
+  std::string can_interface_;
+  CANLib::SocketCanBus canBus;
+  CANLib::CanFrame can_tx_frame_;
 
-  // Hardware interface
-  int gpio_fd_;
-  bool hw_connected_;
+  // CAN bus ID (constant for this HWI)
+  uint32_t can_id_ = 0;
+
+  std::vector<LEDGPIO> LEDGPIOs_;
+  int update_rate_;
+  int logger_rate_;
+  int logger_state_;
+  double elapsed_time_;
+  double elapsed_logger_time_;
+
+  // Multiplexor byte
+  static constexpr uint8_t CMD_INTENSITY = 0x20;
+  static constexpr uint8_t CMD_RGB = 0x30;
+
+  // Parameter to confirm whether to send command or not via CAN
+  static constexpr uint8_t DECLINE_SEND = 0;
+  static constexpr uint8_t CONFIRM_SEND = 1;
 };
 
 }  // namespace led_ros2_control
 
 #endif  // LED_ROS2_CONTROL__LED_HARDWARE_INTERFACE_HPP_
-

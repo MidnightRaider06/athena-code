@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="dc_ros2_control" params="name can_interface:=can0">
+
+    <ros2_control name="${name}" type="system">
+
+      <hardware>
+        <plugin>dc_ros2_control/DCHardwareInterface</plugin>
+        <param name="update_rate">20</param> <!-- Hz -->
+        <param name="logger_rate">5</param> <!-- Hz -->
+        <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
+        <param name="can_interface">${can_interface}</param>
+        <param name="can_id">0x70</param>
+      </hardware>
+
+      <joint name="dc_auger">
+        <param name="node_id">0</param>
+        <param name="joint_type">revolute</param>
+
+        <param name="gear_ratio">50.9</param>
+        <param name="inverted">true</param>
+        <command_interface name="position"/>
+        <command_interface name="velocity"/>
+        <command_interface name="status_request"/>
+        <command_interface name="maintenance_request"/>
+        <command_interface name="maintenance_frame_high"/>
+        <command_interface name="maintenance_frame_low"/>
+        <command_interface name="maintenance_data_count"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="status"/>
+        <state_interface name="motor_temperature"/>
+        <state_interface name="torque_current"/>
+      </joint>
+
+      <joint name="dc_scoop">
+        <param name="node_id">1</param>
+        <param name="joint_type">revolute</param>
+
+        <param name="gear_ratio">50.9</param>
+        <param name="inverted">true</param>
+        <command_interface name="position"/>
+        <command_interface name="velocity"/>
+        <command_interface name="status_request"/>
+        <command_interface name="maintenance_request"/>
+        <command_interface name="maintenance_frame_high"/>
+        <command_interface name="maintenance_frame_low"/>
+        <command_interface name="maintenance_data_count"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+        <state_interface name="status"/>
+        <state_interface name="motor_temperature"/>
+        <state_interface name="torque_current"/>
+      </joint>
+
+    </ros2_control>
+
+  </xacro:macro>
+
+</robot>

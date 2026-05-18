@@ -7,11 +7,11 @@ endif()
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   controller_interface
-  diagnostic_msgs
   hardware_interface
   pluginlib
   rclcpp
   rclcpp_lifecycle
+  msgs
 )
 
 find_package(ament_cmake REQUIRED)
@@ -20,19 +20,19 @@ foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
 
-generate_parameter_library(motor_status_broadcaster_parameters
-  config/motor_status_broadcaster.yaml
+generate_parameter_library(motor_status_controller_parameters
+  config/motor_status_controller.yaml
 )
 
 add_library(
   general_controllers
   SHARED
-  src/motor_status_broadcaster.cpp
+  src/motor_status_controller.cpp
 )
 target_include_directories(general_controllers PUBLIC
   "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(general_controllers motor_status_broadcaster_parameters)
+target_link_libraries(general_controllers motor_status_controller_parameters)
 ament_target_dependencies(general_controllers ${THIS_PACKAGE_INCLUDE_DEPENDS})
 target_compile_definitions(general_controllers PRIVATE "GENERAL_CONTROLLERS_BUILDING_DLL")
 

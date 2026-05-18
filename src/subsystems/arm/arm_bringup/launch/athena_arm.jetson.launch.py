@@ -71,6 +71,13 @@ def generate_launch_description():
             description="Deactivate the talon joints in the URDF when using mock hardware to prevent excessive CAN flow.",
         )
     )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "can_interface",
+            default_value="can1",
+            description="CAN interface to use for hardware interfaces.",
+        )
+    )
     # -- Initialize Arguments --
     runtime_config_package = LaunchConfiguration("runtime_config_package")
     controllers_file = LaunchConfiguration("controllers_file")
@@ -80,6 +87,7 @@ def generate_launch_description():
     mock_sensor_commands = LaunchConfiguration("mock_sensor_commands")
     use_3dof = LaunchConfiguration("use_3dof")
     deactivate_talon = LaunchConfiguration("deactivate_talon")
+    can_interface = LaunchConfiguration("can_interface")
     
     # -- Building Path Files --
     robot_description_path = PathJoinSubstitution(
@@ -114,6 +122,9 @@ def generate_launch_description():
             " ",
             "deactivate_talon:=",
             deactivate_talon,
+            " ",
+            "can_interface:=",
+            can_interface,
             " ",
         ]
     )

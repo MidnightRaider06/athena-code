@@ -10,6 +10,7 @@
   <xacro:arg name="simulation_controllers" default=""/>
   <xacro:arg name="use_3dof" default="false"/>
   <xacro:arg name="deactivate_talon" default="false"/>
+  <xacro:arg name="can_interface" default="can0"/>
 
   <!-- Macro Imports -->
   <!-- Import athena_arm macro -->
@@ -32,6 +33,13 @@
   <!-- Import servo ros2_control description -->
   <xacro:include filename="$(find description)/ros2_control/arm/arm.servo.ros2_control.xacro" />
 
+  <!-- Import rotary encoder ros2_control description -->
+  <xacro:include filename="$(find description)/ros2_control/arm/arm.rotary_encoder.ros2_control.xacro" />
+
+  <!-- Import limit switch ros2_control descriptions -->
+  <xacro:include filename="$(find description)/ros2_control/arm/arm.base_limit_switch.ros2_control.xacro" />
+  <xacro:include filename="$(find description)/ros2_control/arm/arm.end_effector_limit_switch.ros2_control.xacro" />
+
   <!-- Import odrive ros2_control description -->
   <!-- <xacro:include filename="$(find description)/config/odrive.ros2_control.xacro" /> -->
 
@@ -49,17 +57,20 @@
   </xacro:if>
   <xacro:unless value="$(arg use_mock_hardware)"> <!-- HARDWARE -->
     <xacro:if value="$(arg use_3dof)">
-      <xacro:talon_3dof_ros2_control name="talon" deactivate_talon="$(arg deactivate_talon)"/>
-      <xacro:smc_3dof_ros2_control name="smc"/> 
+      <xacro:talon_3dof_ros2_control name="talon" deactivate_talon="$(arg deactivate_talon)" can_interface="$(arg can_interface)"/>
+      <xacro:smc_3dof_ros2_control name="smc" can_interface="$(arg can_interface)"/> 
     </xacro:if>
     <xacro:unless value="$(arg use_3dof)">
-      <xacro:talon_2dof_ros2_control name="talon" deactivate_talon="$(arg deactivate_talon)"/>
-      <xacro:smc_2dof_ros2_control name="smc"/> 
+      <xacro:talon_2dof_ros2_control name="talon" deactivate_talon="$(arg deactivate_talon)" can_interface="$(arg can_interface)"/>
+      <xacro:smc_2dof_ros2_control name="smc" can_interface="$(arg can_interface)"/> 
     </xacro:unless>
 
-    <xacro:rmd_ros2_control name="rmd"/>
-    <xacro:servo_ros2_control name="servo"/>
-    <!-- <xacro:odrive_ros2_control name="odrive"/> -->
+    <xacro:rmd_ros2_control name="rmd" can_interface="$(arg can_interface)"/>
+    <xacro:servo_ros2_control name="servo" can_interface="$(arg can_interface)"/>
+    <xacro:rotary_encoder_ros2_control name="rotary_encoder" can_interface="$(arg can_interface)"/>
+    <xacro:base_arm_limit_switch_ros2_control name="base_arm_limit_switch" can_interface="$(arg can_interface)"/>
+    <xacro:end_effector_limit_switch_ros2_control name="end_effector_limit_switch" can_interface="$(arg can_interface)"/>
+    <!-- <xacro:odrive_ros2_control name="odrive" can_interface="$(arg can_interface)"/> -->
   </xacro:unless>
 
 </robot>

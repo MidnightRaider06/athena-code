@@ -5,6 +5,7 @@
       <!-- Sequence 1: Check if object is detected -->
       <Sequence name="ObjectDetectedSequence">
         <ObjectDetected object_topic="/yolo/target_found" timeout="1.0" />
+        <LedStatus color="green" topic_name="/led_status" />
       </Sequence>
 
       <!-- Sequence 2: If not detected, perform spiral search -->

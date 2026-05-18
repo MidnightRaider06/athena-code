@@ -11,7 +11,6 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   rclcpp
   rclcpp_lifecycle
   realtime_tools
-  msgs
   umdloop_can_library
 )
 
@@ -26,7 +25,6 @@ endforeach()
 # umdloop_can_library is found through the dependency loop above
 
 ament_auto_find_build_dependencies()
-ament_export_dependencies(rosidl_default_runtime)
 
 include_directories(include)
 
@@ -52,7 +50,6 @@ ament_target_dependencies(
   rclcpp
   rclcpp_lifecycle
   realtime_tools
-  msgs
 )
 
 # Export hardware plugins

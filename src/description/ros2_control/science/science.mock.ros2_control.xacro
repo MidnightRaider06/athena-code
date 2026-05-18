@@ -55,13 +55,13 @@
                 <state_interface name="velocity"/>
             </joint>
 
-            <joint name="servo_scoop_a">
+            <joint name="scoop_a">
                 <command_interface name="position"/>
                 <command_interface name="velocity"/>
                 <state_interface name="position"/>
             </joint>
 
-            <joint name="servo_scoop_b">
+            <joint name="scoop_b">
                 <command_interface name="position"/>
                 <command_interface name="velocity"/>
                 <state_interface name="position"/>

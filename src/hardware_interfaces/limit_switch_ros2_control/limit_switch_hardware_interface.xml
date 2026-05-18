@@ -1,0 +1,9 @@
+<library path="limit_switch_ros2_control">
+  <class name="limit_switch_ros2_control/LimitSwitchHardwareInterface"
+         type="limit_switch_ros2_control::LimitSwitchHardwareInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      Limit switch hardware interface via ros2_control GPIO command/state interfaces.
+    </description>
+  </class>
+</library>

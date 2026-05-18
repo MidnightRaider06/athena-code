@@ -1,0 +1,9 @@
+<library path="dc_ros2_control"> <!-- library path which corresponds to cmake. -->
+  <class name="dc_ros2_control/DCHardwareInterface"
+         type="dc_ros2_control::DCHardwareInterface" 
+         base_class_type="hardware_interface::SystemInterface"> <!-- name and type rely on the namespace in the hardware interface. Keep this in mind -->
+    <description>
+      UMDLoop's ros2_control plugin for the DC motors
+    </description>
+  </class>
+</library>

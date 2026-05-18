@@ -84,7 +84,7 @@ bool SocketCanBus::open(const std::string& interface_name, ReceiveCallback callb
     }
 
     // Disable loopback (do not receive our own transmitted frames)
-    int loopback = 0;
+    int loopback = 1;
     setsockopt(socketFd_, SOL_CAN_RAW, CAN_RAW_LOOPBACK, &loopback, sizeof(loopback));
 
     // Disable CAN FD — we only use classical CAN frames

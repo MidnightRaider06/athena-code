@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="rmd_ros2_control" params="name">
+  <xacro:macro name="rmd_ros2_control" params="name can_interface:=can0">
     <ros2_control name="${name}" type="system">
       <hardware>
         <plugin>rmd_ros2_control/RMDHardwareInterface</plugin>
         <param name="update_rate">10</param> <!-- Hz -->
         <param name="logger_rate">5</param> <!-- Hz -->
         <param name="logger_state">0</param> <!-- 0 for off, 1 for on -->
-        <param name="can_interface">can0</param>
+        <param name="can_interface">${can_interface}</param>
       </hardware>
 
       <joint name="shoulder_pitch">
@@ -15,10 +15,18 @@
         <param name="gear_ratio">100</param>
         <param name="joint_orientation">1.0</param>
         <param name="operating_velocity">150</param> <!-- motor dps -->
+        <command_interface name="position" />
+        <command_interface name="velocity"/>
+        <command_interface name="status_request"/>
+        <command_interface name="maintenance_request"/>
+        <command_interface name="maintenance_frame_high"/>
+        <command_interface name="maintenance_frame_low"/>
+        <command_interface name="maintenance_data_count"/>
         <state_interface name="position"/>
         <state_interface name="velocity"/>
         <state_interface name="motor_temperature"/>
         <state_interface name="torque_current"/>
+        <state_interface name="status"/>
       </joint>
       
       <joint name="elbow_pitch">
@@ -26,10 +34,18 @@
         <param name="gear_ratio">100</param>
         <param name="joint_orientation">-1.0</param>
         <param name="operating_velocity">150</param> <!-- motor dps -->
+        <command_interface name="position" />
+        <command_interface name="velocity"/>
+        <command_interface name="status_request"/>
+        <command_interface name="maintenance_request"/>
+        <command_interface name="maintenance_frame_high"/>
+        <command_interface name="maintenance_frame_low"/>
+        <command_interface name="maintenance_data_count"/>
         <state_interface name="position"/>
         <state_interface name="velocity"/>
         <state_interface name="motor_temperature"/>
         <state_interface name="torque_current"/>
+        <state_interface name="status"/>
       </joint>
     </ros2_control>
   </xacro:macro>

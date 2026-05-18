@@ -25,6 +25,7 @@ def generate_launch_description():
     use_respawn       = LaunchConfiguration('use_respawn')
     log_level         = LaunchConfiguration('log_level')
     use_config        = LaunchConfiguration('use_config')
+    can_interface     = LaunchConfiguration('can_interface')
 
     use_localizer = PythonExpression(
         ["'false' if '", use_zed_localizer, "' == 'true' else 'true'"]
@@ -38,6 +39,9 @@ def generate_launch_description():
         PathJoinSubstitution([
             FindPackageShare('description'), 'urdf', 'athena_drive.urdf.xacro'
         ]),
+        ' ',
+        'can_interface:=',
+        can_interface,
     ])
 
     robot_state_publisher = Node(
@@ -57,6 +61,14 @@ def generate_launch_description():
         name='nav2_config_gui',
         output='screen',
         condition=IfCondition(use_config),
+    )
+
+    mag_heading_launch_file = os.path.join(
+        get_package_share_directory('mag_heading'), 'launch', 'mag_heading.launch.py'
+    )
+
+    mag_heading_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(mag_heading_launch_file),
     )
 
     navigation_launch_file = os.path.join(
@@ -89,12 +101,12 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'use_zed_localizer',
-            default_value='false',
+            default_value='true',
             choices=['true', 'false'],
         ),
         DeclareLaunchArgument(
             'enable_gnss',
-            default_value='false',
+            default_value='true',
             choices=['true', 'false'],
             description='Enable GNSS fusion inside the ZED camera',
         ),
@@ -125,8 +137,14 @@ def generate_launch_description():
             choices=['true', 'false'],
             description='Launch the Nav2 config GUI',
         ),
+        DeclareLaunchArgument(
+            'can_interface',
+            default_value='can0',
+            description='CAN interface to use for hardware interfaces.',
+        ),
     
         robot_state_publisher,
+        mag_heading_launch,
         navigation_launch,
         config_gui,
     ])
